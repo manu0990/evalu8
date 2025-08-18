@@ -1,18 +1,88 @@
-# 🎯 Evalu8 - AI-Powered Interview Evaluation Platform
+# Evalu8 - AI-Powered Interview Evaluation Platform
 
-A modern web application that helps evaluate users' interview capabilities by conducting mock interviews with AI. Built with TypeScript, Next.js, and real-time features, this platform provides comprehensive interview assessment tools for both candidates and recruiters.
+Open source platform for conducting AI-powered mock interviews and real-time evaluation.
 
-## 🚀 Features
+## Running Locally
 
-- **AI-Powered Mock Interviews**: Conduct realistic interview sessions with AI
-- **Real-time Evaluation**: Instant feedback and assessment during interviews
-- **Database Integration**: PostgreSQL with Prisma ORM for data persistence
-- **WebSocket Communication**: Real-time features for live interview sessions
-- **Modern UI**: Built with React 19, Next.js 15, and Tailwind CSS
-- **Type Safety**: 100% TypeScript across the entire codebase
-- **Theme Support**: Dark/light mode with next-themes
+> **Note**
+> 
+> This project uses pnpm only as a package manager.
 
-## 📁 Project Structure
+**Clone the repository:**
+```bash
+git clone https://github.com/manu0990/evalu8.git
+```
+
+**Navigate to the project directory:**
+```bash
+cd evalu8
+```
+
+## Instant Docker Setup
+
+> **Note**
+> 
+> Your Docker Daemon should be online
+
+**One-command setup using Docker Compose:**
+```bash
+# Start all services (PostgreSQL, Web App, WebSocket Server)
+docker-compose -f docker-compose.dev.yaml up
+```
+
+**To run in detached mode:**
+```bash
+docker-compose -f docker-compose.dev.yaml up -d
+```
+
+**To stop all services:**
+```bash
+docker-compose -f docker-compose.dev.yaml down
+```
+
+## Traditional Docker Setup
+
+**(Optional) Start PostgreSQL database using Docker:**
+```bash
+docker run -d \
+  --name evalu8-db \
+  -e POSTGRES_USER=evalu8_user \
+  -e POSTGRES_PASSWORD=evalu8_password \
+  -e POSTGRES_DB=evalu8_db \
+  -p 5432:5432 \
+  postgres:alpine
+```
+
+**Create a .env file:**
+- Copy `.env.example` and rename it to `.env.local`
+
+**Install dependencies:**
+```bash
+pnpm install
+```
+
+**Run database migrations:**
+```bash
+pnpm db:migrate
+```
+
+**Generate Prisma client:**
+```bash
+pnpm db:generate
+```
+
+**Start the development server:**
+```bash
+pnpm dev
+```
+
+## Usage
+
+**Access the applications in your browser:**
+- Web Application: http://localhost:3000
+- WebSocket Server: http://localhost:8080
+
+## Project Structure
 
 This Turborepo monorepo includes the following apps and packages:
 
@@ -132,16 +202,6 @@ This will start:
 - Web app on `http://localhost:3000` (Main interview platform with Turbopack)
 - WebSocket server on the configured `WS_PORT` (default: 8080 for real-time communication)
 
-## 🎨 Whiteboard Features
-
-The platform includes an interactive whiteboard for technical interviews with support for:
-
-- **Drawing Tools**: Select, rectangle, ellipse, arrow, line, freedraw, text, and delete
-- **Customization**: Stroke color, fill color, and stroke width options
-- **Real-time Collaboration**: Multiple users can draw simultaneously
-- **History Management**: Undo/redo functionality with state history
-- **Shape Management**: Select, move, and modify drawn elements
-
 ### Build
 
 To build all apps and packages, run the following command:
@@ -241,7 +301,6 @@ From the root directory:
 │  │  │  └─ globals.css      # Global styles import
 │  │  ├─ components/         # React components (ready for development)
 │  │  ├─ types/              # TypeScript type definitions
-│  │  │  └─ whiteboard.ts    # Whiteboard and drawing types
 │  │  └─ public/             # Static assets
 │  └─ ws-server/             # WebSocket server (ws v8.18.3)
 │     └─ src/                # Server source code with TypeScript
@@ -291,31 +350,40 @@ The following environment variables are configured as global in `turbo.json`:
 - `NODE_ENV` - Environment mode (development/production)
 - `WS_PORT` - WebSocket server port
 
-## 🤝 Contributing
+## Contributing
 
-We welcome contributions! Please follow these steps:
+We welcome contributions from the community! There are many ways to contribute to Evalu8. Code is just one possible means of contribution.
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+**To contribute follow these steps:**
 
-### Development Guidelines
+**Fork the repository.**
 
-- Follow TypeScript strict mode requirements
-- Use the existing ESLint and Prettier configurations
-- Write meaningful commit messages
-- Test your changes thoroughly
-- Update documentation as needed
+**Clone the fork to your local machine:**
+```bash
+git clone https://github.com/<your username>/evalu8.git
+cd evalu8
+```
 
-### Package Development
+**Create a new branch:**
+```bash
+git checkout -b feature/fooBar
+```
 
-Each package follows these conventions:
-- **TypeScript**: Strict mode enabled with version 5.8.2+
-- **ESLint**: Shared configurations with zero warnings policy
-- **Exports**: Proper package exports for better tree-shaking
-- **Workspace Dependencies**: Uses `workspace:*` for internal packages
+**Make your changes and commit them:**
+```bash
+git commit -am 'Add some fooBar'
+```
+
+**Push to the branch:**
+```bash
+git push origin feature/fooBar
+```
+
+**Go to the repository and make a Pull Request.**
+
+For major changes, please open an issue first to discuss what you would like to change.
+
+Read our [contribution guidelines](CONTRIBUTING.md) for more details.
 
 ## 🗺️ Roadmap
 
@@ -325,17 +393,14 @@ Each package follows these conventions:
 - ✅ WebSocket server for real-time communication
 - ✅ Database layer with Prisma ORM and PostgreSQL
 - ✅ Shared UI component library with Radix UI
-- ✅ Whiteboard type definitions for technical interviews
 - ✅ Development tooling (ESLint, Prettier, TypeScript)
 
 ### Upcoming Features
 - [ ] Complete AI interview integration
-- [ ] Enhanced whiteboard features (shapes library, templates)
 - [ ] Video/audio recording for interview sessions
 - [ ] Analytics dashboard for interview performance
 - [ ] Multi-language support
 - [ ] Mobile responsive design improvements
-- [ ] Real-time collaborative whiteboard implementation
 
 ## 📄 License
 
