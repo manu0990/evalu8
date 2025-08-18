@@ -6,9 +6,6 @@ A modern web application that helps evaluate users' interview capabilities by co
 
 - **AI-Powered Mock Interviews**: Conduct realistic interview sessions with AI
 - **Real-time Evaluation**: Instant feedback and assessment during interviews
-- **Interactive Whiteboard**: Drawing tools for technical interviews and problem-solving
-  - Rectangle, ellipse, arrow, line, freedraw, and text tools
-  - Real-time collaborative drawing capabilities
 - **Database Integration**: PostgreSQL with Prisma ORM for data persistence
 - **WebSocket Communication**: Real-time features for live interview sessions
 - **Modern UI**: Built with React 19, Next.js 15, and Tailwind CSS
@@ -23,60 +20,65 @@ This Turborepo monorepo includes the following apps and packages:
 
 - **`apps/web`**: Main Next.js frontend application for the interview platform
   - AI-powered interview interface and evaluation dashboard
-  - Interactive whiteboard component with drawing tools for technical interviews
   - Modern UI with custom Google Fonts (Handlee, EB Garamond, Space Mono)
   - Theme support with next-themes integration
   - TypeScript with strict type checking
+  - Built with Next.js 15.4.2, React 19.1.0, and Turbopack for fast development
 - **`apps/ws-server`**: WebSocket server for real-time communication
   - Handles real-time interview sessions
-  - Built with Node.js and the `ws` library
+  - Built with Node.js and the `ws` library (v8.18.3)
   - Integrates with the database for session persistence
+  - TypeScript support with ESM modules
 
 ### Packages
 
 - **`packages/db`**: Database layer with Prisma ORM
   - PostgreSQL database configuration
   - User management and interview session models
-  - Generated Prisma client for type-safe database queries
+  - Generated Prisma client (v6.13.0) for type-safe database queries
+  - Database migrations with initial User model (id, username, email, password)
 - **`packages/ui`**: Shared React component library
-  - Reusable UI components (alerts, buttons, etc.)
+  - Reusable UI components (alerts, buttons, etc.) built with Radix UI
   - Consistent styling with Tailwind CSS and shadcn/ui components
-  - Shared across all applications
+  - Class Variance Authority for component variants
+  - Shared across all applications with TypeScript support
 - **`packages/eslint-config`**: ESLint configurations
   - Base configuration for consistent code style
   - Next.js specific rules and React internal configurations
-  - Includes Prettier integration
+  - Includes Prettier integration with ESLint 9.31.0
 - **`packages/typescript-config`**: TypeScript configurations
-  - Base TypeScript configuration
+  - Base TypeScript configuration (v5.8.2)
   - Next.js specific settings
   - React library configurations
 - **`packages/tailwind-config`**: Shared Tailwind CSS configuration
-  - Consistent styling across all apps
+  - Consistent styling across all apps with Tailwind CSS 4.1.5
   - PostCSS configuration and shared styles
+  - CSS animation support with tw-animate-css
 
 Each package/app is 100% [TypeScript](https://www.typescriptlang.org/) with strict type checking enabled.
 
 ## 🛠️ Tech Stack
 
-- **Frontend**: Next.js 15, React 19, TypeScript 5.8
-- **Styling**: Tailwind CSS 4.x, Lucide React icons, Custom Google Fonts
-- **Backend**: Node.js, WebSocket (ws library)
-- **Database**: PostgreSQL with Prisma ORM
-- **Monorepo**: Turborepo with pnpm workspaces
-- **Development**: ESLint, Prettier, TypeScript strict mode
-- **HTTP Client**: Axios for API communication
-- **Themes**: next-themes for dark/light mode support
+- **Frontend**: Next.js 15.4.2, React 19.1.0, TypeScript 5.8.3
+- **Styling**: Tailwind CSS 4.1.5, Lucide React icons 0.536.0
+- **Backend**: Node.js, WebSocket (ws 8.18.3)
+- **Database**: PostgreSQL with Prisma ORM 6.13.0
+- **Monorepo**: Turborepo 2.5.6 with pnpm 9.0.0 workspaces
+- **Development**: ESLint 9.31.0, Prettier 3.6.2, TypeScript strict mode
+- **HTTP Client**: Axios 1.11.0 for API communication
+- **Themes**: next-themes 0.4.6 for dark/light mode support
+- **UI Components**: Radix UI, Class Variance Authority, tailwind-merge, clsx
 
 ## 🏗️ Utilities
 
 This Turborepo has the following tools configured:
 
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
-- [Turborepo](https://turborepo.com/) for efficient monorepo management
-- [pnpm](https://pnpm.io/) as the package manager
-- [Prisma](https://prisma.io/) for database ORM and migrations
+- [TypeScript](https://www.typescriptlang.org/) 5.8.3 for static type checking
+- [ESLint](https://eslint.org/) 9.31.0 for code linting
+- [Prettier](https://prettier.io) 3.6.2 for code formatting
+- [Turborepo](https://turborepo.com/) 2.5.6 for efficient monorepo management
+- [pnpm](https://pnpm.io/) 9.0.0 as the package manager
+- [Prisma](https://prisma.io/) 6.13.0 for database ORM and migrations
 
 ## 🚀 Getting Started
 
@@ -91,7 +93,7 @@ This Turborepo has the following tools configured:
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/manu0990/drawligent.git
+git clone https://github.com/manu0990/evalu8.git
 cd evalu8
 ```
 
@@ -127,8 +129,8 @@ pnpm dev
 
 This will start:
 
-- Web app on `http://localhost:3000` (Main interview platform)
-- WebSocket server on the configured `WS_PORT` (Real-time communication)
+- Web app on `http://localhost:3000` (Main interview platform with Turbopack)
+- WebSocket server on the configured `WS_PORT` (default: 8080 for real-time communication)
 
 ## 🎨 Whiteboard Features
 
@@ -213,39 +215,54 @@ pnpm prisma studio
 
 From the root directory:
 
-- `pnpm dev` - Start all development servers
+- `pnpm dev` - Start all development servers (uses Turborepo)
 - `pnpm build` - Build all packages and apps
-- `pnpm lint` - Lint all packages and apps
+- `pnpm lint` - Lint all packages and apps with ESLint
 - `pnpm format` - Format code with Prettier
-- `pnpm check-types` - Run TypeScript type checking
+- `pnpm check-types` - Run TypeScript type checking across all packages
+
+### Database Management Scripts
+
+- `pnpm db:migrate` - Run Prisma migrations in development
+- `pnpm db:migrate:deploy` - Deploy migrations to production
+- `pnpm db:generate` - Generate Prisma client
+- `pnpm db:push` - Push schema changes directly to database
+- `pnpm db:studio` - Open Prisma Studio for database management
+- `pnpm db:reset` - Reset database and run all migrations
 
 ## 🧩 Architecture
 
 ```
 ┌─ apps/
-│  ├─ web/                    # Next.js frontend app
+│  ├─ web/                    # Next.js frontend app (v15.4.2)
 │  │  ├─ app/                # Next.js app router
-│  │  │  ├─ layout.tsx       # Root layout with fonts
+│  │  │  ├─ layout.tsx       # Root layout with custom Google Fonts
 │  │  │  ├─ page.tsx         # Home page
 │  │  │  └─ globals.css      # Global styles import
-│  │  ├─ components/         # React components (empty - ready for development)
+│  │  ├─ components/         # React components (ready for development)
 │  │  ├─ types/              # TypeScript type definitions
 │  │  │  └─ whiteboard.ts    # Whiteboard and drawing types
 │  │  └─ public/             # Static assets
-│  └─ ws-server/             # WebSocket server
-│     └─ src/                # Server source code
+│  └─ ws-server/             # WebSocket server (ws v8.18.3)
+│     └─ src/                # Server source code with TypeScript
 ├─ packages/
-│  ├─ db/                    # Database layer
+│  ├─ db/                    # Database layer (Prisma v6.13.0)
 │  │  ├─ prisma/             # Schema and migrations
-│  │  │  └─ schema.prisma    # User model and database config
-│  │  └─ generated/          # Generated Prisma client
-│  ├─ ui/                    # Shared UI components
-│  │  └─ src/components/     # Reusable React components
-│  ├─ tailwind-config/       # Tailwind CSS configuration
-│  │  └─ shared-styles.css   # Design system with CSS variables
-│  ├─ eslint-config/         # ESLint configurations
-│  └─ typescript-config/     # TypeScript configurations
-└─ turbo.json               # Turborepo configuration
+│  │  │  ├─ schema.prisma    # User model and database config
+│  │  │  └─ migrations/      # Database migration files
+│  │  ├─ generated/          # Generated Prisma client
+│  │  └─ src/                # Database exports and client setup
+│  ├─ ui/                    # Shared UI components (React 19.1.0)
+│  │  └─ src/components/     # Reusable React components with Radix UI
+│  │     ├─ alert.tsx        # Alert component with variants
+│  │     ├─ button.tsx       # Button component with CVA
+│  │     └─ lib/utils.ts     # Utility functions (clsx, tailwind-merge)
+│  ├─ tailwind-config/       # Tailwind CSS configuration (v4.1.5)
+│  │  ├─ shared-styles.css   # Design system with CSS variables
+│  │  └─ postcss.config.js   # PostCSS configuration
+│  ├─ eslint-config/         # ESLint configurations (v9.31.0)
+│  └─ typescript-config/     # TypeScript configurations (v5.8.2)
+└─ turbo.json               # Turborepo configuration with TUI
 ```
 
 ## ⚙️ Environment Variables
@@ -268,6 +285,12 @@ NEXT_PUBLIC_WS_URL="ws://localhost:8080"
 # AI_MODEL="gpt-4"
 ```
 
+### Global Environment Variables (Turborepo)
+
+The following environment variables are configured as global in `turbo.json`:
+- `NODE_ENV` - Environment mode (development/production)
+- `WS_PORT` - WebSocket server port
+
 ## 🤝 Contributing
 
 We welcome contributions! Please follow these steps:
@@ -286,14 +309,33 @@ We welcome contributions! Please follow these steps:
 - Test your changes thoroughly
 - Update documentation as needed
 
+### Package Development
+
+Each package follows these conventions:
+- **TypeScript**: Strict mode enabled with version 5.8.2+
+- **ESLint**: Shared configurations with zero warnings policy
+- **Exports**: Proper package exports for better tree-shaking
+- **Workspace Dependencies**: Uses `workspace:*` for internal packages
+
 ## 🗺️ Roadmap
 
+### Current Status
+- ✅ Monorepo setup with Turborepo and pnpm workspaces
+- ✅ Next.js 15 frontend with React 19 and TypeScript
+- ✅ WebSocket server for real-time communication
+- ✅ Database layer with Prisma ORM and PostgreSQL
+- ✅ Shared UI component library with Radix UI
+- ✅ Whiteboard type definitions for technical interviews
+- ✅ Development tooling (ESLint, Prettier, TypeScript)
+
+### Upcoming Features
 - [ ] Complete AI interview integration
 - [ ] Enhanced whiteboard features (shapes library, templates)
 - [ ] Video/audio recording for interview sessions
 - [ ] Analytics dashboard for interview performance
 - [ ] Multi-language support
 - [ ] Mobile responsive design improvements
+- [ ] Real-time collaborative whiteboard implementation
 
 ## 📄 License
 
