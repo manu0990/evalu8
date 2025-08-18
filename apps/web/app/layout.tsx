@@ -15,7 +15,6 @@ const ebGaramond = EB_Garamond({
   style: ["normal", "italic"],
 });
 
-
 const spaceMono = Space_Mono({
   subsets: ["latin"],
   variable: "--font-mono",
@@ -24,8 +23,9 @@ const spaceMono = Space_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Drawligent",
-  description: "Drawligent is a modern whiteboard application that can also use AI for solving maths from the drawing or shapes you create on the white board.",
+  title: "evalu8",
+  description:
+    "evalu8 is a modern web application that helps you to evaluate users' interview cracking capability by taking a moch interview with AI",
 };
 
 export default function RootLayout({
@@ -35,7 +35,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${ebGaramond.variable} ${patrickHand.variable} ${spaceMono.variable}`}>
+      <body
+        className={`${ebGaramond.variable} ${patrickHand.variable} ${spaceMono.variable}`}
+      >
         {children}
       </body>
     </html>

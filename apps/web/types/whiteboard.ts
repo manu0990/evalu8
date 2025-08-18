@@ -1,4 +1,12 @@
-export type Tool = 'select' | 'rectangle' | 'ellipse' | 'arrow' | 'line' | 'freedraw' | 'text' | 'delete';
+export type Tool =
+  | "select"
+  | "rectangle"
+  | "ellipse"
+  | "arrow"
+  | "line"
+  | "freedraw"
+  | "text"
+  | "delete";
 
 export interface Point {
   x: number;
@@ -7,7 +15,7 @@ export interface Point {
 
 export interface Shape {
   id: string;
-  type: 'rectangle' | 'ellipse' | 'arrow' | 'line' | 'freedraw' | 'text';
+  type: "rectangle" | "ellipse" | "arrow" | "line" | "freedraw" | "text";
   x: number;
   y: number;
   width: number;
