@@ -4,6 +4,7 @@
 node_modules
 .pnp
 .pnp.js
+.yarn/install-state.gz
 
 # Local env files
 .env
@@ -36,3 +37,7 @@ yarn-error.log*
 # Misc
 .DS_Store
 *.pem
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts

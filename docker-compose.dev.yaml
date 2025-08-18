@@ -1,0 +1,52 @@
+services:
+  postgres:
+    image: postgres:alpine
+    container_name: evalu8_db
+    environment:
+      POSTGRES_USER: evalu8_user
+      POSTGRES_PASSWORD: evalu8_password
+      POSTGRES_DB: evalu8_db
+    ports: 
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: ./apps/web/Dockerfile.dev
+    container_name: evalu8_web
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://evalu8_user:evalu8_password@postgres:5432/evalu8_db
+    volumes:
+      - .:/app
+      - /app/apps/web/node_modules
+      - /app/apps/web/.next
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+  ws-server:
+    build:
+      context: .
+      dockerfile: ./apps/ws-server/Dockerfile.dev
+    container_name: evalu8_ws_server
+    ports:
+      - "8080:8080"
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://evalu8_user:evalu8_password@postgres:5432/evalu8_db
+    volumes:
+      - .:/app
+      - /app/apps/ws-server/node_modules
+      - /app/apps/ws-server/dist
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
