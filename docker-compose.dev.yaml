@@ -15,7 +15,7 @@ services:
   web:
     build:
       context: .
-      dockerfile: ./apps/web/Dockerfile.dev
+      dockerfile: ./docker/Dockerfile.web
     container_name: evalu8_web
     ports:
       - "3000:3000"
@@ -33,7 +33,7 @@ services:
   ws-server:
     build:
       context: .
-      dockerfile: ./apps/ws-server/Dockerfile.dev
+      dockerfile: ./docker/Dockerfile.ws
     container_name: evalu8_ws_server
     ports:
       - "8080:8080"
