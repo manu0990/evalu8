@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
-import { Handlee, EB_Garamond, Space_Mono } from "next/font/google";
+import { Inter, EB_Garamond, Space_Mono } from "next/font/google";
 import { Toaster } from "@repo/ui";
 import "./globals.css";
 
-const patrickHand = Handlee({
+const inter = Inter({
   subsets: ["latin"],
   variable: "--font-sans",
-  weight: ["400"],
+  weight: ["400", "500", "600", "700"],
 });
 
 const ebGaramond = EB_Garamond({
@@ -37,7 +37,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${ebGaramond.variable} ${patrickHand.variable} ${spaceMono.variable}`}
+        className={`${ebGaramond.variable} ${inter.variable} ${spaceMono.variable}`}
       >
         {children}
         <Toaster richColors closeButton position="bottom-right" />
