@@ -38,3 +38,14 @@ export {
 export { Input } from "@/components/input";
 export { Separator } from "@/components/separator";
 export { Toaster } from "@/components/sonner";
+export {
+  useFormField,
+  Form,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormDescription,
+  FormMessage,
+  FormField,
+} from "@/components/form";
+export { Label } from "@/components/label";

@@ -23,10 +23,10 @@ const Header: React.FC = () => {
         {/* Desktop Auth Buttons */}
         <div className="hidden sm:flex items-center space-x-3">
             <Button variant="ghost" size="sm" className="text-white rounded-full">
-                <Link href="/signin">Sign In</Link>
+                <Link href="/auth/signin">Sign In</Link>
             </Button>
             <Button size="sm" className="bg-white text-black hover:bg-gray-200 rounded-full">
-                <Link href="/signup">Get Started</Link>
+                <Link href="/auth/signup">Get Started</Link>
             </Button>
         </div>
         
