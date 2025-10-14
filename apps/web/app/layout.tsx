@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Handlee, EB_Garamond, Space_Mono } from "next/font/google";
+import { Toaster } from "@repo/ui";
 import "./globals.css";
 
 const patrickHand = Handlee({
@@ -39,6 +40,7 @@ export default function RootLayout({
         className={`${ebGaramond.variable} ${patrickHand.variable} ${spaceMono.variable}`}
       >
         {children}
+        <Toaster richColors closeButton position="bottom-right" />
       </body>
     </html>
   );
