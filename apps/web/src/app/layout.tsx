@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, EB_Garamond, Space_Mono } from "next/font/google";
 import { Toaster } from "@repo/ui";
+import { AuthProvider } from "@/components/providers/SessionProvider";
 import "./globals.css";
 
 const inter = Inter({
@@ -39,8 +40,10 @@ export default function RootLayout({
       <body
         className={`${ebGaramond.variable} ${inter.variable} ${spaceMono.variable}`}
       >
-        {children}
-        <Toaster richColors closeButton position="bottom-right" />
+        <AuthProvider>
+          {children}
+          <Toaster richColors closeButton position="bottom-right" />
+        </AuthProvider>
       </body>
     </html>
   );
