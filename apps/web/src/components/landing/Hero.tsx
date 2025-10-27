@@ -1,9 +1,10 @@
 import React from 'react';
 import { Button, Badge } from '@repo/ui';
+import Link from 'next/link';
 
 const Hero = () => {
   return (
-    <section className="flex justify-center items-center h-screen bg-gradient-to-br from-black via-gray-800 to-black text-white">
+    <section className="flex justify-center items-center h-screen bg-linear-to-br from-black via-gray-800 to-black text-white">
       <div className="text-center max-w-4xl px-6">
         <h1 className="text-6xl md:text-7xl font-bold mb-6 leading-tight">
           Rise Above The Rest
@@ -14,9 +15,11 @@ const Hero = () => {
         
         {/* Main CTAs */}
         <div className="flex flex-col sm:flex-row justify-center items-center gap-4 mb-8">
-          <Button size="lg" className="bg-white text-black hover:bg-gray-200 rounded-full px-8 w-full sm:w-auto cursor-pointer">
-            Start For Free
-          </Button>
+          <Link href="/auth/signin">
+            <Button size="lg" className="bg-white text-black hover:bg-gray-200 rounded-full px-8 w-full sm:w-auto cursor-pointer">
+              Start For Free
+            </Button>
+          </Link>
           <Button variant="outline" size="lg" className="rounded-full px-8 w-full sm:w-auto cursor-pointer">
             Watch Demo
           </Button>

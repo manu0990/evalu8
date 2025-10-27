@@ -10,32 +10,32 @@ const Header: React.FC = () => {
     <header className="py-6 px-4 sm:px-6 lg:px-8 absolute top-0 left-0 right-0 z-50">
       <div className="container mx-auto flex justify-between items-center relative">
         <Link href="/" className="text-2xl font-semibold text-white tracking-tighter">evalu8</Link>
-        
+
         {/* Desktop Navigation */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 hidden sm:block">
-            <nav className="flex items-center space-x-1 bg-gray-900/70 border border-gray-700/80 rounded-full p-1 backdrop-blur-sm">
-              <Link href="#features" className="text-gray-300 hover:bg-gray-700 hover:text-white transition-colors px-4 py-1.5 rounded-full text-sm font-medium">Features</Link>
-              <Link href="#pricing" className="text-gray-300 hover:bg-gray-700 hover:text-white transition-colors px-4 py-1.5 rounded-full text-sm font-medium">Pricing</Link>
-              <Link href="#faq" className="text-gray-300 hover:bg-gray-700 hover:text-white transition-colors px-4 py-1.5 rounded-full text-sm font-medium">FAQ</Link>
-            </nav>
+          <nav className="flex items-center space-x-1 bg-gray-900/70 border border-gray-700/80 rounded-full p-1 backdrop-blur-sm">
+            <Link href="#features" className="text-gray-300 hover:bg-gray-700 hover:text-white transition-colors px-4 py-1.5 rounded-full text-sm font-medium">Features</Link>
+            <Link href="#pricing" className="text-gray-300 hover:bg-gray-700 hover:text-white transition-colors px-4 py-1.5 rounded-full text-sm font-medium">Pricing</Link>
+            <Link href="#faq" className="text-gray-300 hover:bg-gray-700 hover:text-white transition-colors px-4 py-1.5 rounded-full text-sm font-medium">FAQ</Link>
+          </nav>
         </div>
 
         {/* Desktop Auth Buttons */}
         <div className="hidden sm:flex items-center space-x-3">
-            <Button variant="ghost" size="sm" className="text-white rounded-full">
-                <Link href="/auth/signin">Sign In</Link>
-            </Button>
-            <Button size="sm" className="bg-white text-black hover:bg-gray-200 rounded-full">
-                <Link href="/auth/signup">Get Started</Link>
-            </Button>
+          <Button variant="ghost" size="sm" className="text-white rounded-full">
+            <Link href="/auth/signin">Sign In</Link>
+          </Button>
+          <Button size="sm" className="bg-white text-black hover:bg-gray-200 rounded-full">
+            <Link href="/auth/signup">Get Started</Link>
+          </Button>
         </div>
-        
+
         {/* Mobile Login Button */}
         <div className="sm:hidden">
-            <Button variant="secondary" size="sm" className=" rounded-full">
-                <Link href="/signin">Sign In</Link>
-            </Button>
-        </div>      
+          <Button variant="secondary" size="sm" className=" rounded-full">
+            <Link href="/signin">Sign In</Link>
+          </Button>
+        </div>
       </div>
 
 

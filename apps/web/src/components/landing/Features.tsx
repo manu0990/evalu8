@@ -36,7 +36,7 @@ const Features: React.FC = () => {
   ];
 
   return (
-    <section id="features" className="min-h-screen py-20 bg-gradient-to-b from-black to-gray-900">
+    <section id="features" className="min-h-screen py-20 bg-linear-to-b from-black to-gray-900">
       <div className="container mx-auto px-4">
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-black text-white tracking-tighter mb-4">
@@ -49,7 +49,7 @@ const Features: React.FC = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
           {features.map((feature, index) => (
-            <Card key={index} className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 border-gray-700/50 hover:border-gray-600/50 transition-all duration-300">
+            <Card key={index} className="bg-linear-to-br from-gray-800/50 to-gray-900/50 border-gray-700/50 hover:border-gray-600/50 transition-all duration-300">
               <CardContent className="p-6">
                 <div className="text-4xl mb-4">{feature.icon}</div>
                 <h3 className="text-xl font-semibold text-white mb-3">{feature.title}</h3>

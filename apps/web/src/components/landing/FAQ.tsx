@@ -25,7 +25,7 @@ const faqData = [
 
 const FAQ: React.FC = () => {
   return (
-    <section id="faq" className="py-24 bg-gradient-to-br from-gray-950 via-black to-gray-900">
+    <section id="faq" className="py-24 bg-linear-to-br from-gray-950 via-black to-gray-900">
       <div className="container mx-auto max-w-3xl">
         <div className="text-center mb-16">
           <h2 className="text-5xl md:text-6xl font-black text-white tracking-tighter mb-6">Frequently Asked Questions</h2>
