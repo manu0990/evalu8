@@ -51,7 +51,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
   }, [userMenuOpen]);
 
   return (
-    <Sidebar className="border-r">
+    <Sidebar className="border-r border-sidebar-border">
       {/* Header */}
       <SidebarHeader>
         <SidebarMenu>
