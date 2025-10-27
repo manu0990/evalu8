@@ -1,4 +1,17 @@
 export { Button } from "@/components/button";
+export {
+  AlertDialog,
+  AlertDialogPortal,
+  AlertDialogOverlay,
+  AlertDialogTrigger,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from "@/components/alert-dialog";
 export { 
   NavigationMenu,
   NavigationMenuList,
@@ -89,3 +102,16 @@ export {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from "@/components/dropdown-menu";
+export {
+  Select,
+  SelectGroup,
+  SelectValue,
+  SelectTrigger,
+  SelectContent,
+  SelectLabel,
+  SelectItem,
+  SelectSeparator,
+  SelectScrollUpButton,
+  SelectScrollDownButton,
+} from "@/components/select";
+export { Textarea } from "@/components/textarea";

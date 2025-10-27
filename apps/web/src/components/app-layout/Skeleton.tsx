@@ -20,7 +20,7 @@ export function DashboardSkeleton() {
       {/* Stats cards skeleton */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="p-6 border rounded-lg bg-card">
+          <div key={i} className="p-6 rounded-lg bg-card">
             <div className="flex items-center space-x-3 mb-3">
               <Skeleton className="h-5 w-5 rounded" />
               <Skeleton className="h-4 w-28" />
@@ -41,7 +41,7 @@ export function DashboardSkeleton() {
         {/* Meeting cards skeleton */}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="p-6 border rounded-lg bg-card">
+            <div key={i} className="p-6 rounded-lg bg-card">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <Skeleton className="h-5 w-36" />
@@ -70,7 +70,7 @@ export function MeetingGridSkeleton() {
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="p-6 border rounded-lg bg-card">
+          <div key={i} className="p-6 rounded-lg bg-card">
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <Skeleton className="h-5 w-36" />

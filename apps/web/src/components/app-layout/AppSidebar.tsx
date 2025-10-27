@@ -3,12 +3,10 @@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarMenuSub, SidebarMenuSubButton, SidebarMenuSubItem } from "@repo/ui";
 import { Home, Calendar, BarChart3, Settings, HelpCircle, User, ChevronDown, Monitor, Sparkles, LogOut, FileText } from "lucide-react";
 import Image from "next/image";
+import { useRouter, usePathname } from "next/navigation";
 import { useState, useEffect, useRef } from 'react';
 
 interface AppSidebarProps {
-  currentView: 'dashboard' | 'meetings' | 'analytics' | 'settings';
-  onViewChange: (view: 'dashboard' | 'meetings' | 'analytics' | 'settings') => void;
-  onCreateMeeting: () => void;
   user?: {
     name?: string | null;
     email?: string | null;
@@ -17,18 +15,20 @@ interface AppSidebarProps {
 }
 
 const generalNav = [
-  { name: 'Dashboard', key: 'dashboard' as const, icon: Home },
-  { name: 'Meetings', key: 'meetings' as const, icon: Calendar },
-  { name: 'Analytics', key: 'analytics' as const, icon: BarChart3 },
+  { name: 'Dashboard', key: 'dashboard' as const, icon: Home, href: '/dashboard' },
+  { name: 'Meetings', key: 'meetings' as const, icon: Calendar, href: '/meetings' },
+  { name: 'Analytics', key: 'analytics' as const, icon: BarChart3, href: '/analytics' },
 ];
 
 const settingsSubNav = [
-  { name: 'Profile', key: 'profile' as const, icon: User },
-  { name: 'Account', key: 'account' as const, icon: Settings },
-  { name: 'Appearance', key: 'appearance' as const, icon: Monitor },
+  { name: 'Profile', key: 'profile' as const, icon: User, href: '/settings/profile' },
+  { name: 'Account', key: 'account' as const, icon: Settings, href: '/settings/account' },
+  { name: 'Appearance', key: 'appearance' as const, icon: Monitor, href: '/settings/appearance' },
 ];
 
-export function AppSidebar({ currentView, onViewChange, user }: AppSidebarProps) {
+export function AppSidebar({ user }: AppSidebarProps) {
+  const router = useRouter();
+  const pathname = usePathname();
   const [settingsExpanded, setSettingsExpanded] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
@@ -74,18 +74,14 @@ export function AppSidebar({ currentView, onViewChange, user }: AppSidebarProps)
             <SidebarMenu>
               {generalNav.map((item) => {
                 const Icon = item.icon;
-                const isActive = currentView === item.key;
+                const isActive = pathname === item.href;
 
                 return (
                   <SidebarMenuItem key={item.key}>
                     <SidebarMenuButton
                       className="cursor-pointer"
                       isActive={isActive}
-                      onClick={() => {
-                        if (item.key === 'dashboard' || item.key === 'meetings' || item.key === 'analytics') {
-                          onViewChange(item.key);
-                        }
-                      }}
+                      onClick={() => router.push(item.href)}
                     >
                       <Icon />
                       <span>{item.name}</span>
@@ -120,7 +116,7 @@ export function AppSidebar({ currentView, onViewChange, user }: AppSidebarProps)
                         <SidebarMenuSubItem key={item.key}>
                           <SidebarMenuSubButton
                             className="cursor-pointer"
-                            onClick={() => item.key === 'account' && onViewChange('settings')}
+                            onClick={() => router.push(item.href)}
                           >
                             <Icon />
                             <span>{item.name}</span>

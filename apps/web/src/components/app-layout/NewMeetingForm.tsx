@@ -252,10 +252,10 @@ export function NewMeetingForm({ onSubmit, onCancel, isSubmitting = false, uploa
                 </div>
               </div>
             ) : (
-              <div className="border rounded-lg p-4 bg-green-50 dark:bg-green-950/20">
+              <div className="border rounded-lg p-4 bg-primary/10">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
-                    <FileCheck className="h-8 w-8 text-green-600" />
+                    <FileCheck className="h-8 w-8 text-primary" />
                     <div>
                       <p className="font-medium">{resumeFile.name}</p>
                       <p className="text-sm text-muted-foreground">
@@ -289,7 +289,7 @@ export function NewMeetingForm({ onSubmit, onCancel, isSubmitting = false, uploa
             )}
             {isSubmitting && uploadProgress > 0 && uploadProgress < 100 && (
               <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                <div className="w-32 bg-gray-200 rounded-full h-2">
+                <div className="w-32 bg-muted rounded-full h-2">
                   <div 
                     className="bg-primary h-2 rounded-full transition-all duration-300" 
                     style={{ width: `${uploadProgress}%` }}

@@ -65,21 +65,21 @@ export function DashboardOverview({ stats }: DashboardOverviewProps) {
       value: stats.totalMeetings.toString(),
       description: "All interview sessions",
       icon: Calendar,
-      color: "text-blue-600"
+      color: "text-primary"
     },
     {
       title: "Completed",
       value: stats.completedMeetings.toString(),
       description: `${completionRate}% completion rate`,
       icon: CheckCircle,
-      color: "text-green-600"
+      color: "text-primary"
     },
     {
       title: "Ready to Start",
       value: stats.readyMeetings.toString(),
       description: "Questions prepared",
       icon: Activity,
-      color: "text-orange-600"
+      color: "text-primary"
     }
   ];
 
@@ -117,17 +117,17 @@ export function DashboardOverview({ stats }: DashboardOverviewProps) {
         
         {/* New Meeting Button Card */}
         <Card 
-          className="hover:shadow-lg transition-all cursor-pointer border-dashed border-2 hover:border-blue-500 hover:bg-blue-50/50 dark:hover:bg-blue-950/20"
+          className="hover:shadow-lg transition-all cursor-pointer border-dashed border-2 hover:border-primary hover:bg-accent/50"
           onClick={() => setShowNewMeetingForm(true)}
         >
           <CardContent className="px-6 flex items-center justify-center min-h-[120px]">
             <div className="text-center space-y-2">
               <div className="flex justify-center">
-                <div className="rounded-full bg-blue-100 dark:bg-blue-900/30 p-2">
-                  <Plus className="h-8 w-8 text-blue-600" />
+                <div className="rounded-full bg-primary/10 p-2">
+                  <Plus className="h-8 w-8 text-primary" />
                 </div>
               </div>
-              <p className="text-sm font-semibold text-blue-600">
+              <p className="text-sm font-semibold text-primary">
                 New Meeting
               </p>
               <p className="text-xs text-muted-foreground">
@@ -145,29 +145,29 @@ export function DashboardOverview({ stats }: DashboardOverviewProps) {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="text-center p-4 bg-yellow-50 dark:bg-yellow-950/20 rounded-lg">
-              <div className="text-2xl font-bold text-yellow-600">
+            <div className="text-center p-4 bg-secondary rounded-lg">
+              <div className="text-2xl font-bold text-secondary-foreground">
                 {stats.pendingMeetings}
               </div>
               <div className="text-sm text-muted-foreground">Processing</div>
             </div>
             
-            <div className="text-center p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
-              <div className="text-2xl font-bold text-blue-600">
+            <div className="text-center p-4 bg-accent rounded-lg">
+              <div className="text-2xl font-bold text-accent-foreground">
                 {stats.readyMeetings}
               </div>
               <div className="text-sm text-muted-foreground">Ready</div>
             </div>
             
-            <div className="text-center p-4 bg-red-50 dark:bg-red-950/20 rounded-lg">
-              <div className="text-2xl font-bold text-red-600">
+            <div className="text-center p-4 bg-destructive/10 rounded-lg">
+              <div className="text-2xl font-bold text-destructive">
                 {stats.inProgressMeetings}
               </div>
               <div className="text-sm text-muted-foreground">In Progress</div>
             </div>
             
-            <div className="text-center p-4 bg-green-50 dark:bg-green-950/20 rounded-lg">
-              <div className="text-2xl font-bold text-green-600">
+            <div className="text-center p-4 bg-primary/10 rounded-lg">
+              <div className="text-2xl font-bold text-primary">
                 {stats.completedMeetings}
               </div>
               <div className="text-sm text-muted-foreground">Completed</div>
@@ -184,7 +184,7 @@ export function DashboardOverview({ stats }: DashboardOverviewProps) {
         <CardContent>
           <div className="space-y-3 text-sm">
             <div className="flex items-start space-x-2">
-              <TrendingUp className="h-4 w-4 mt-0.5 text-blue-500" />
+              <TrendingUp className="h-4 w-4 mt-0.5 text-primary" />
               <div>
                 <p className="font-medium">Optimize your resume</p>
                 <p className="text-muted-foreground">
@@ -194,7 +194,7 @@ export function DashboardOverview({ stats }: DashboardOverviewProps) {
             </div>
             
             <div className="flex items-start space-x-2">
-              <Clock className="h-4 w-4 mt-0.5 text-green-500" />
+              <Clock className="h-4 w-4 mt-0.5 text-primary" />
               <div>
                 <p className="font-medium">Best practice</p>
                 <p className="text-muted-foreground">
@@ -204,7 +204,7 @@ export function DashboardOverview({ stats }: DashboardOverviewProps) {
             </div>
             
             <div className="flex items-start space-x-2">
-              <Activity className="h-4 w-4 mt-0.5 text-purple-500" />
+              <Activity className="h-4 w-4 mt-0.5 text-primary" />
               <div>
                 <p className="font-medium">Improve performance</p>
                 <p className="text-muted-foreground">

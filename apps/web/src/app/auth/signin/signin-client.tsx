@@ -13,7 +13,7 @@ import { Form, FormControl, FormField, FormItem, FormMessage } from "@repo/ui";
 import Image from "next/image";
 
 export const formSchema = z.object({
-  email: z.string().min(1, "Email is required").email("Please enter a valid email address"),
+  email: z.email("Please enter a valid email address"),
   password: z
     .string()
     .min(8, "Password must be at least 8 characters long")
@@ -25,7 +25,7 @@ export const formSchema = z.object({
 
 export default function SigninClient() {
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") || "/home";
+  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
   const providerButtonStyle = "w-full rounded space-x-5 h-12 text-md font-sans rounded-full bg-input/20 border-input hover:bg-input/50";
 
   const [isLoading, setIsLoading] = useState(false);
