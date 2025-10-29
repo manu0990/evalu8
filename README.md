@@ -1,440 +1,409 @@
 # Evalu8 - AI-Powered Interview Evaluation Platform
 
-Open source platform for conducting AI-powered mock interviews and real-time evaluation.
+Open-source platform for conducting AI-powered mock interviews with real-time evaluation and analytics.
 
-## Running Locally
+## 🚀 Quick Start
 
-> **Note**
-> 
-> This project uses pnpm only as a package manager.
+### Prerequisites
 
-**Clone the repository:**
+Before contributing, ensure you have:
+- **Node.js** >= 18.0.0
+- **pnpm** >= 9.0.0 (This project uses pnpm as the package manager)
+- **Docker** (Optional, for containerized setup)
+- **PostgreSQL** (Optional, if not using Docker)
+
+### 1. Fork and Clone
+
 ```bash
-git clone https://github.com/manu0990/evalu8.git
-```
-
-**Navigate to the project directory:**
-```bash
+# Fork the repository on GitHub, then clone your fork
+git clone https://github.com/<your-username>/evalu8.git
 cd evalu8
 ```
 
-## Instant Docker Setup
+### 2. Set Up Development Environment
 
-> **Note**
-> 
-> Your Docker Daemon should be online
+Choose one of the following setup methods:
 
-**One-command setup using Docker Compose:**
+#### Option A: Docker Compose (Recommended for Quick Start)
+
 ```bash
-# Start all services (PostgreSQL, Web App, WebSocket Server)
+# Start all services
 docker-compose -f docker-compose.dev.yaml up
-```
 
-**To run in detached mode:**
-```bash
+# Or run in detached mode
 docker-compose -f docker-compose.dev.yaml up -d
-```
 
-**To stop all services:**
-```bash
+# Stop all services
 docker-compose -f docker-compose.dev.yaml down
 ```
 
-## Traditional Docker Setup
+#### Option B: Manual Setup (Recommended for Development)
 
-**(Optional) Start PostgreSQL database using Docker:**
 ```bash
+# Clone the repository
+git clone https://github.com/manu0990/evalu8.git
+cd evalu8
+
+# Install dependencies
+pnpm install
+
+# Get a db connection (install PostgreSQL locally or use a cloud service)
+# To use Docker to run PostgreSQL:
 docker run -d \
   --name evalu8-db \
-  -e POSTGRES_USER=evalu8_user \
+  -e POSTGRES_USER=evalu8_user \    
   -e POSTGRES_PASSWORD=evalu8_password \
   -e POSTGRES_DB=evalu8_db \
   -p 5432:5432 \
   postgres:alpine
-```
 
-**Create a .env file:**
-- Copy `.env.example` and rename it to `.env.local`
+# Set up environment variables
+cp .env.example .env # Edit .env with your actual values
 
-**Install dependencies:**
-```bash
-pnpm install
-```
-
-**Run database migrations:**
-```bash
+# Run database migrations
 pnpm db:migrate
-```
 
-**Generate Prisma client:**
-```bash
+# Generate Prisma client
 pnpm db:generate
-```
-
-**Start the development server:**
-```bash
-pnpm dev
-```
-
-## Usage
-
-**Access the applications in your browser:**
-- Web Application: http://localhost:3000
-- WebSocket Server: http://localhost:8080
-
-## Project Structure
-
-This Turborepo monorepo includes the following apps and packages:
-
-### Apps
-
-- **`apps/web`**: Main Next.js frontend application for the interview platform
-  - AI-powered interview interface and evaluation dashboard
-  - Modern UI with custom Google Fonts (Handlee, EB Garamond, Space Mono)
-  - Theme support with next-themes integration
-  - TypeScript with strict type checking
-  - Built with Next.js 15.4.2, React 19.1.0, and Turbopack for fast development
-- **`apps/ws-server`**: WebSocket server for real-time communication
-  - Handles real-time interview sessions
-  - Built with Node.js and the `ws` library (v8.18.3)
-  - Integrates with the database for session persistence
-  - TypeScript support with ESM modules
-
-### Packages
-
-- **`packages/db`**: Database layer with Prisma ORM
-  - PostgreSQL database configuration
-  - User management and interview session models
-  - Generated Prisma client (v6.13.0) for type-safe database queries
-  - Database migrations with initial User model (id, username, email, password)
-- **`packages/ui`**: Shared React component library
-  - Reusable UI components (alerts, buttons, etc.) built with Radix UI
-  - Consistent styling with Tailwind CSS and shadcn/ui components
-  - Class Variance Authority for component variants
-  - Shared across all applications with TypeScript support
-- **`packages/eslint-config`**: ESLint configurations
-  - Base configuration for consistent code style
-  - Next.js specific rules and React internal configurations
-  - Includes Prettier integration with ESLint 9.31.0
-- **`packages/typescript-config`**: TypeScript configurations
-  - Base TypeScript configuration (v5.8.2)
-  - Next.js specific settings
-  - React library configurations
-- **`packages/tailwind-config`**: Shared Tailwind CSS configuration
-  - Consistent styling across all apps with Tailwind CSS 4.1.5
-  - PostCSS configuration and shared styles
-  - CSS animation support with tw-animate-css
-
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/) with strict type checking enabled.
-
-## 🛠️ Tech Stack
-
-- **Frontend**: Next.js 15.4.2, React 19.1.0, TypeScript 5.8.3
-- **Styling**: Tailwind CSS 4.1.5, Lucide React icons 0.536.0
-- **Backend**: Node.js, WebSocket (ws 8.18.3)
-- **Database**: PostgreSQL with Prisma ORM 6.13.0
-- **Monorepo**: Turborepo 2.5.6 with pnpm 9.0.0 workspaces
-- **Development**: ESLint 9.31.0, Prettier 3.6.2, TypeScript strict mode
-- **HTTP Client**: Axios 1.11.0 for API communication
-- **Themes**: next-themes 0.4.6 for dark/light mode support
-- **UI Components**: Radix UI, Class Variance Authority, tailwind-merge, clsx
-
-## 🏗️ Utilities
-
-This Turborepo has the following tools configured:
-
-- [TypeScript](https://www.typescriptlang.org/) 5.8.3 for static type checking
-- [ESLint](https://eslint.org/) 9.31.0 for code linting
-- [Prettier](https://prettier.io) 3.6.2 for code formatting
-- [Turborepo](https://turborepo.com/) 2.5.6 for efficient monorepo management
-- [pnpm](https://pnpm.io/) 9.0.0 as the package manager
-- [Prisma](https://prisma.io/) 6.13.0 for database ORM and migrations
-
-## 🚀 Getting Started
-
-### Prerequisites
-
-- Node.js 18 or later
-- pnpm 9.0.0 or later
-- PostgreSQL database
-
-### Installation
-
-1. Clone the repository:
-
-```bash
-git clone https://github.com/manu0990/evalu8.git
-cd evalu8
-```
-
-2. Install dependencies:
-
-```bash
-pnpm install
-```
-
-3. Set up environment variables:
-
-```bash
-# Create .env files in apps/web and packages/db
-cp apps/web/.env.example apps/web/.env
-# Add your DATABASE_URL and other required variables
-```
-
-4. Set up your database:
-
-```bash
-# Navigate to the database package and run migrations
-cd packages/db
-pnpm prisma migrate dev
-pnpm prisma generate
-```
-
-5. Start development servers:
-
-```bash
-# From the root directory
-pnpm dev
-```
-
-This will start:
-
-- Web app on `http://localhost:3000` (Main interview platform with Turbopack)
-- WebSocket server on the configured `WS_PORT` (default: 8080 for real-time communication)
-
-### Build
-
-To build all apps and packages, run the following command:
-
-```bash
-cd evalu8
-
-# With global turbo installed (recommended)
-turbo build
-
-# Without global turbo, use pnpm
-pnpm build
-```
-
-You can build a specific package by using a [filter](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters):
-
-```bash
-# Build only the web app
-turbo build --filter=web
-
-# Build only the WebSocket server
-turbo build --filter=@repo/ws-server
-```
-
-### Development
-
-To develop all apps and packages, run the following command:
-
-```bash
-cd evalu8
 
 # Start all development servers
 pnpm dev
-
-# Or with global turbo
-turbo dev
 ```
 
-You can develop a specific package by using a [filter](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters):
+### 3. Verify Setup
 
-```bash
-# Develop only the web app
-turbo dev --filter=web
+Access the applications:
+- Web App: http://localhost:3000
+- WebSocket Server: ws://localhost:8080
 
-# Develop only the WebSocket server
-turbo dev --filter=@repo/ws-server
+## 📁 Project Structure
+
+```
+evalu8/
+├── apps/
+│   ├── web/                    # Next.js frontend (Port 3000)
+│   │   ├── src/
+│   │   │   ├── app/           # Next.js App Router
+│   │   │   ├── components/    # React components
+│   │   │   └── lib/           # Utilities & configurations
+│   │   └── package.json
+│   └── ws-server/             # WebSocket server (Port 8080)
+│       ├── src/
+│       └── package.json
+├── docker/
+│   ├── Dockerfile.web         # Docker configuration for web app
+│   └── Dockerfile.ws          # Docker configuration for WebSocket server
+├── packages/
+│   ├── db/                    # Prisma ORM & Database
+│   │   ├── prisma/
+│   │   │   ├── schema.prisma  # Database schema
+│   │   │   └── migrations/    # Database migrations
+│   │   └── package.json
+│   ├── ui/                    # Shared UI components (shadcn/ui)
+│   ├── eslint-config/         # Shared ESLint configurations
+│   ├── typescript-config/     # Shared TypeScript configurations
+│   └── tailwind-config/       # Shared Tailwind CSS setup
+├── .env.example               # Environment variables template (root)
+├── .env                       # Your environment variables (root, git-ignored)
+├── docker-compose.dev.yaml    # Docker Compose configuration
+├── package.json               # Root package configuration
+├── pnpm-workspace.yaml        # pnpm workspace configuration
+└── turbo.json                 # Turborepo configuration
 ```
 
-## 🗃️ Database Management
+### Apps
 
-This project uses Prisma with PostgreSQL. Here are common database commands:
+- **`apps/web`** - Next.js 15.4.2 frontend with React 19.1.0
+  - AI-powered interview interface and evaluation dashboard
+  - NextAuth.js authentication with Google & GitHub
+  - Modern UI with Tailwind CSS v4 and shadcn/ui components
+  - Theme support (dark/light mode)
+  
+- **`apps/ws-server`** - WebSocket server for real-time communication
+  - Handles real-time interview sessions
+  - Built with Node.js and `ws` library (v8.18.3)
+
+### Packages
+
+- **`packages/db`** - Database layer with Prisma ORM 6.13.0
+  - PostgreSQL configuration and migrations
+  - Type-safe database client
+  
+- **`packages/ui`** - Shared React component library
+  - Reusable components built with Radix UI
+  - Consistent styling with Tailwind CSS
+  
+- **`packages/eslint-config`** - ESLint configurations for code quality
+  
+- **`packages/typescript-config`** - TypeScript 5.8.2 configurations
+  
+- **`packages/tailwind-config`** - Shared Tailwind CSS 4.1.5 setup
+
+Each package/app is 100% [TypeScript](https://www.typescriptlang.org/) with strict type checking.
+
+## 🛠️ Tech Stack
+
+### Frontend
+- **Next.js** 15.4.2 with App Router
+- **React** 19.1.0 with TypeScript 5.8.3
+- **Tailwind CSS** 4.1.5 for styling
+- **shadcn/ui** - Custom component library built on Radix UI
+- **NextAuth.js** 4.24.11 for authentication
+
+### Backend
+- **Node.js** WebSocket server
+- **ws** 8.18.3 for WebSocket communication
+- **PostgreSQL** database
+- **Prisma ORM** 6.13.0
+
+### Development Tools
+- **Turborepo** 2.5.6 for monorepo management
+- **pnpm** 9.0.0 for package management
+- **ESLint** 9.31.0 for code linting
+- **Prettier** 3.6.2 for code formatting
+- **TypeScript** 5.8.3 with strict mode
+
+### Additional Libraries
+- **Axios** 1.11.0 for HTTP requests
+- **React Hook Form** + **Zod** for form handling
+- **Lucide React** 0.536.0 for icons
+- **bcryptjs** for password hashing
+- **next-themes** 0.4.6 for theme support
+
+## 🔧 Utilities
+
+This project uses the following development utilities:
+
+- **[TypeScript](https://www.typescriptlang.org/)** 5.8.3 - Static type checking with strict mode
+- **[ESLint](https://eslint.org/)** 9.31.0 - Code linting and quality checks
+- **[Prettier](https://prettier.io)** 3.6.2 - Automatic code formatting
+- **[Turborepo](https://turborepo.com/)** 2.5.6 - Efficient monorepo task management with caching
+- **[pnpm](https://pnpm.io/)** 9.0.0 - Fast, disk space efficient package manager
+- **[Prisma](https://prisma.io/)** 6.13.0 - Next-generation ORM for database management
+
+## 🚀 Development Commands
+
+### Run All Apps
 
 ```bash
-# Navigate to the database package
-cd packages/db
+# Start all development servers
+pnpm dev
+
+# Build all apps and packages
+pnpm build
+
+# Lint all code
+pnpm lint
+
+# Type check all packages
+pnpm check-types
+
+# Format code with Prettier
+pnpm format
+```
+
+### Build Specific App
+
+Build only a specific application from the root directory:
+
+```bash
+# Build only the web app
+pnpm build --filter=web
+
+# Build only the WebSocket server
+pnpm build --filter=ws-server
+
+# Build only the database package
+pnpm build --filter=@repo/db
+
+# Build only the UI package
+pnpm build --filter=@repo/ui
+```
+
+### Run Specific App
+
+Run a specific app in development mode:
+
+```bash
+# Run only the web app
+pnpm dev --filter=web
+
+# Run only the WebSocket server
+pnpm dev --filter=ws-server
+```
+
+### Database Commands
+
+```bash
+# Run migrations in development
+pnpm db:migrate
+
+# Deploy migrations to production
+pnpm db:migrate:deploy
 
 # Generate Prisma client
-pnpm prisma generate
+pnpm db:generate
 
-# Run migrations
-pnpm prisma migrate dev
+# Push schema changes directly to database
+pnpm db:push
 
-# Reset database
-pnpm prisma migrate reset
+# Open Prisma Studio (database GUI)
+pnpm db:studio
 
-# Open Prisma Studio
-pnpm prisma studio
+# Reset database and run all migrations
+pnpm db:reset
 ```
 
-## 📝 Available Scripts
+> **Tip**: Use [Turborepo filters](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters) to run commands on specific packages.
 
-From the root directory:
-
-- `pnpm dev` - Start all development servers (uses Turborepo)
-- `pnpm build` - Build all packages and apps
-- `pnpm lint` - Lint all packages and apps with ESLint
-- `pnpm format` - Format code with Prettier
-- `pnpm check-types` - Run TypeScript type checking across all packages
-
-### Database Management Scripts
-
-- `pnpm db:migrate` - Run Prisma migrations in development
-- `pnpm db:migrate:deploy` - Deploy migrations to production
-- `pnpm db:generate` - Generate Prisma client
-- `pnpm db:push` - Push schema changes directly to database
-- `pnpm db:studio` - Open Prisma Studio for database management
-- `pnpm db:reset` - Reset database and run all migrations
-
-## 🧩 Architecture
+## 🏗️ Architecture
 
 ```
-┌─ apps/
-│  ├─ web/                    # Next.js frontend app (v15.4.2)
-│  │  ├─ app/                # Next.js app router
-│  │  │  ├─ layout.tsx       # Root layout with custom Google Fonts
-│  │  │  ├─ page.tsx         # Home page
-│  │  │  └─ globals.css      # Global styles import
-│  │  ├─ components/         # React components (ready for development)
-│  │  ├─ types/              # TypeScript type definitions
-│  │  └─ public/             # Static assets
-│  └─ ws-server/             # WebSocket server (ws v8.18.3)
-│     └─ src/                # Server source code with TypeScript
-├─ packages/
-│  ├─ db/                    # Database layer (Prisma v6.13.0)
-│  │  ├─ prisma/             # Schema and migrations
-│  │  │  ├─ schema.prisma    # User model and database config
-│  │  │  └─ migrations/      # Database migration files
-│  │  ├─ generated/          # Generated Prisma client
-│  │  └─ src/                # Database exports and client setup
-│  ├─ ui/                    # Shared UI components (React 19.1.0)
-│  │  └─ src/components/     # Reusable React components with Radix UI
-│  │     ├─ alert.tsx        # Alert component with variants
-│  │     ├─ button.tsx       # Button component with CVA
-│  │     └─ lib/utils.ts     # Utility functions (clsx, tailwind-merge)
-│  ├─ tailwind-config/       # Tailwind CSS configuration (v4.1.5)
-│  │  ├─ shared-styles.css   # Design system with CSS variables
-│  │  └─ postcss.config.js   # PostCSS configuration
-│  ├─ eslint-config/         # ESLint configurations (v9.31.0)
-│  └─ typescript-config/     # TypeScript configurations (v5.8.2)
-└─ turbo.json               # Turborepo configuration with TUI
+┌─────────────────────────────────────────────────────────────┐
+│                     Client (Browser)                        │
+│                   http://localhost:3000                     │
+└────────────────┬──────────────────────┬─────────────────────┘
+                 │                      │
+         HTTP/HTTPS Requests    WebSocket Connection
+                 │                      │
+         ┌───────▼───────┐       ┌──────▼──────┐
+         │   Next.js App │       │  WS Server  │
+         │   (Port 3000) │       │ (Port 8080) │
+         │               │       │             │
+         │ - App Router  │       │ - Real-time │
+         │ - NextAuth    │       │ - Sessions  │
+         │ - API Routes  │       │             │
+         └───────┬───────┘       └──────┬──────┘
+                 │                      │
+                 └───────────┬──────────┘
+                             │
+                      Prisma Client
+                             │
+                      ┌──────▼──────┐
+                      │ PostgreSQL  │
+                      │  Database   │
+                      │             │
+                      │ - Users     │
+                      │ - Sessions  │
+                      │ - Meetings  │
+                      └─────────────┘
+
+Shared Packages:
+┌────────────────────────────────────────────────────────────┐
+│  @repo/db  │  @repo/ui  │  @repo/eslint-config  │  etc.   │
+└────────────────────────────────────────────────────────────┘
 ```
 
-## ⚙️ Environment Variables
+### Key Components
 
-Make sure to set up the following environment variables:
+1. **Web Application** (`apps/web`)
+   - Next.js 15 with App Router
+   - Server-side rendering and API routes
+   - NextAuth.js for authentication
+   - Communicates with PostgreSQL via Prisma
 
-```bash
-# packages/db/.env or apps/web/.env
-DATABASE_URL="postgresql://username:password@localhost:5432/evalu8"
+2. **WebSocket Server** (`apps/ws-server`)
+   - Real-time bidirectional communication
+   - Handles live interview sessions
+   - Event-driven architecture
 
-# WebSocket Server Configuration
+3. **Database Layer** (`packages/db`)
+   - Prisma ORM for type-safe queries
+   - PostgreSQL for data persistence
+   - Centralized schema and migrations
+
+4. **Shared Packages**
+   - `@repo/ui` - Reusable React components
+   - `@repo/eslint-config` - Code quality rules
+   - `@repo/typescript-config` - TS configurations
+   - `@repo/tailwind-config` - Styling setup
+
+## ⚙️ Environment Variables 
+
+All environment variables should be defined in the root `.env` file:
+
+```env
+# Database Connection
+DATABASE_URL="postgresql://evalu8_user:evalu8_password@localhost:5432/evalu8_db"
+
+# NextAuth Configuration
+NEXTAUTH_URL="http://localhost:3000"
+NEXTAUTH_SECRET="your-secret-key-here"  # Generate with: openssl rand -base64 32
+
+# OAuth Providers (Optional)
+GOOGLE_CLIENT_ID="your-google-client-id"
+GOOGLE_CLIENT_SECRET="your-google-client-secret"
+GITHUB_CLIENT_ID="your-github-client-id"
+GITHUB_CLIENT_SECRET="your-github-client-secret"
+
+# WebSocket Server
 WS_PORT=8080
 
-# Next.js Configuration
-NODE_ENV=development
-NEXT_PUBLIC_WS_URL="ws://localhost:8080"
-
-# Additional configuration for AI features (when implemented)
-# OPENAI_API_KEY="your-openai-api-key"
-# AI_MODEL="gpt-4"
+# Environment
+NODE_ENV="development"
 ```
 
-### Global Environment Variables (Turborepo)
+### Required Environment Variables
 
-The following environment variables are configured as global in `turbo.json`:
-- `NODE_ENV` - Environment mode (development/production)
-- `WS_PORT` - WebSocket server port
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `DATABASE_URL` | PostgreSQL connection string | ✅ Yes |
+| `NEXTAUTH_SECRET` | Secret for NextAuth.js session encryption | ✅ Yes |
+| `NEXTAUTH_URL` | Base URL for NextAuth callbacks | ✅ Yes |
+| `GOOGLE_CLIENT_ID` | Google OAuth client ID | ⚠️ For Google login |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret | ⚠️ For Google login |
+| `GITHUB_CLIENT_ID` | GitHub OAuth client ID | ⚠️ For GitHub login |
+| `GITHUB_CLIENT_SECRET` | GitHub OAuth client secret | ⚠️ For GitHub login |
+| `WS_PORT` | WebSocket server port | ✅ Yes |
+| `NODE_ENV` | Environment mode (development/production) | ✅ Yes |
 
-## Contributing
+## 🔐 Security Best Practices
 
-We welcome contributions from the community! There are many ways to contribute to Evalu8. Code is just one possible means of contribution.
+- ✅ **Never commit `.env` files** - They are in `.gitignore`
+- ✅ **Always commit `.env.example` files** - Templates for other developers
+- ✅ **Use strong secrets** - Generate with `openssl rand -base64 32`
+- ✅ **Different values per environment** - Dev, staging, and prod should differ
+- ✅ **Rotate secrets regularly** - Change secrets periodically
 
-**To contribute follow these steps:**
+## 🤝 Contributing
 
-**Fork the repository.**
+We welcome contributions! Please follow these steps:
 
-**Clone the fork to your local machine:**
-```bash
-git clone https://github.com/<your username>/evalu8.git
-cd evalu8
-```
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/your-feature`
+3. Make your changes and commit: `git commit -am 'Add new feature'`
+4. Push to the branch: `git push origin feature/your-feature`
+5. Open a Pull Request
 
-**Create a new branch:**
-```bash
-git checkout -b feature/fooBar
-```
-
-**Make your changes and commit them:**
-```bash
-git commit -am 'Add some fooBar'
-```
-
-**Push to the branch:**
-```bash
-git push origin feature/fooBar
-```
-
-**Go to the repository and make a Pull Request.**
-
-For major changes, please open an issue first to discuss what you would like to change.
-
-Read our [contribution guidelines](CONTRIBUTING.md) for more details.
-
-## 🗺️ Roadmap
-
-### Current Status
-- ✅ Monorepo setup with Turborepo and pnpm workspaces
-- ✅ Next.js 15 frontend with React 19 and TypeScript
-- ✅ WebSocket server for real-time communication
-- ✅ Database layer with Prisma ORM and PostgreSQL
-- ✅ Shared UI component library with Radix UI
-- ✅ Development tooling (ESLint, Prettier, TypeScript)
-
-### Upcoming Features
-- [ ] Complete AI interview integration
-- [ ] Video/audio recording for interview sessions
-- [ ] Analytics dashboard for interview performance
-- [ ] Multi-language support
-- [ ] Mobile responsive design improvements
+Read our detailed [Contribution Guidelines](CONTRIBUTING.md) before getting started.
 
 ## 📄 License
 
 This project is licensed under the ISC License.
 
-### Remote Caching
+## 🔗 Useful Links
+
+### Documentation
+- **[Turborepo](https://turborepo.com/docs)** - Monorepo management
+  - [Running Tasks](https://turborepo.com/docs/crafting-your-repository/running-tasks)
+  - [Caching](https://turborepo.com/docs/crafting-your-repository/caching)
+  - [Filtering](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters)
+- **[Next.js](https://nextjs.org/docs)** - React framework
+- **[Prisma](https://www.prisma.io/docs)** - Database ORM
+- **[NextAuth.js](https://next-auth.js.org)** - Authentication
+- **[Tailwind CSS](https://tailwindcss.com/docs)** - Styling
+- **[shadcn/ui](https://ui.shadcn.com)** - UI components
+- **[WebSocket (ws)](https://github.com/websockets/ws)** - Real-time communication
+- **[pnpm](https://pnpm.io/motivation)** - Package manager
 
 ### Remote Caching (Optional)
 
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
-
-Turborepo can use [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
-
-To enable Remote Caching:
+Turborepo can use [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching) to share build caches across machines:
 
 ```bash
-# Authenticate with Vercel
+# Authenticate with Vercel (free for all plans)
 turbo login
 
 # Link your Turborepo to Remote Cache
 turbo link
 ```
-
-## 🔗 Useful Links
-
-Learn more about the technologies used in this project:
-
-- **Turborepo**: [Documentation](https://turborepo.com/docs)
-  - [Tasks](https://turborepo.com/docs/crafting-your-repository/running-tasks)
-  - [Caching](https://turborepo.com/docs/crafting-your-repository/caching)
-  - [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching)
-  - [Filtering](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters)
-- **Next.js**: [Documentation](https://nextjs.org/docs)
-- **Prisma**: [Documentation](https://www.prisma.io/docs)
-- **WebSocket**: [ws library](https://github.com/websockets/ws)
-- **Tailwind CSS**: [Documentation](https://tailwindcss.com/docs)
