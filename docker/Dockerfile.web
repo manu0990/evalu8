@@ -17,6 +17,9 @@ COPY apps/web/ ./apps/web/
 # Install dependencies from the root
 RUN pnpm install
 
+# Generate prisma client
+RUN pnpm db:generate
+
 # Build the web app
 WORKDIR /app/apps/web
 RUN pnpm build

@@ -17,6 +17,9 @@ COPY apps/ws-server/ ./apps/ws-server/
 # Install dependencies from the root
 RUN pnpm install
 
+# Generate prisma client
+RUN pnpm db:generate
+
 # Build the ws-server app
 WORKDIR /app/apps/ws-server
 RUN pnpm build
