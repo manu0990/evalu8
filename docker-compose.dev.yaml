@@ -11,42 +11,58 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
+    healthcheck:
+      test: [ 'CMD-SHELL', 'pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}' ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   web:
     build:
       context: .
-      dockerfile: ./docker/Dockerfile.web
-    container_name: evalu8_web
+      dockerfile: ./docker/Dockerfile.dev
+    container_name: evalu8_web  
     ports:
       - "3000:3000"
     environment:
       - NODE_ENV=development
+      - CHOKIDAR_USEPOLLING=true
       - DATABASE_URL=postgresql://evalu8_user:evalu8_password@postgres:5432/evalu8_db
+      - NEXTAUTH_SECRET=your-super-secret-key-change-this-in-production-min-32-chars
+      - NEXTAUTH_URL=http://localhost:3000
+      - GOOGLE_CLIENT_ID=example-google-client-id
+      - GOOGLE_CLIENT_SECRET=example-google-client-secret
+      - GITHUB_CLIENT_ID=example-github-client-id
+      - GITHUB_CLIENT_SECRET=example-github-client-secret
     volumes:
       - .:/app
       - /app/apps/web/node_modules
       - /app/apps/web/.next
     depends_on:
-      - postgres
-    restart: unless-stopped
+      postgres:
+        condition: service_healthy
+    command: sh -c "pnpm db:migrate && pnpm db:generate && pnpm --filter web dev"
+    restart: always
 
   ws-server:
     build:
       context: .
-      dockerfile: ./docker/Dockerfile.ws
-    container_name: evalu8_ws_server
+      dockerfile: ./docker/Dockerfile.dev
+    container_name: evalu8_ws
     ports:
       - "8080:8080"
     environment:
       - NODE_ENV=development
+      - CHOKIDAR_USEPOLLING=true
       - DATABASE_URL=postgresql://evalu8_user:evalu8_password@postgres:5432/evalu8_db
     volumes:
       - .:/app
       - /app/apps/ws-server/node_modules
-      - /app/apps/ws-server/dist
     depends_on:
-      - postgres
-    restart: unless-stopped
+      postgres:
+        condition: service_healthy
+    command: sh -c "pnpm db:migrate && pnpm db:generate && pnpm --filter ws-server dev"
+    restart: always
 
 volumes:
   postgres_data:

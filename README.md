@@ -27,15 +27,25 @@ Choose one of the following setup methods:
 #### Option A: Docker Compose (Recommended for Quick Start)
 
 ```bash
-# Start all services
-docker-compose -f docker-compose.dev.yaml up
+# Start all services (postgres, web, and ws-server)
+docker compose -f docker-compose.dev.yaml up
 
-# Or run in detached mode
-docker-compose -f docker-compose.dev.yaml up -d
+# Start only specific services
+docker compose -f docker-compose.dev.yaml up web          # Only web app (+ postgres)
+docker compose -f docker-compose.dev.yaml up ws-server    # Only WebSocket server (+ postgres)
+
+# Run in detached mode with (background)
+docker compose -f docker-compose.dev.yaml up -d           # All services
+
+# Rebuild and start individual services
+docker compose -f docker-compose.dev.yaml up --build web
+docker compose -f docker-compose.dev.yaml up --build ws-server
 
 # Stop all services
-docker-compose -f docker-compose.dev.yaml down
+docker compose -f docker-compose.dev.yaml down
 ```
+
+> **Note:** When you start `web` or `ws-server`, Docker Compose automatically starts `postgres` as a dependency.
 
 #### Option B: Manual Setup (Recommended for Development)
 
