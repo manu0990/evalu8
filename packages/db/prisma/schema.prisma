@@ -1,16 +1,10 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
+  output   = "../generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 model User {
@@ -21,8 +15,9 @@ model User {
   image         String?
   password      String?
 
-  accounts     Account[]
-  sessions     Session[]
+  accounts Account[]
+  sessions Session[]
+  meetings Meeting[]
 }
 
 model Account {
@@ -61,4 +56,54 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+model Meeting {
+  id             String        @id @default(cuid())
+  userId         String
+  companyName    String
+  companyWebsite String?
+  roleToApply    String
+  requirements   String        @db.Text
+  status         MeetingStatus @default(PENDING)
+  resumeS3Key    String
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  completedAt    DateTime?
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages       Message[]
+  evaluation     Evaluation?
+}
+
+model Message {
+  id        String        @id @default(cuid())
+  meetingId String
+  sender    MessageSender
+  content   String        @db.Text
+  timestamp DateTime      @default(now())
+
+  meeting Meeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+}
+
+model Evaluation {
+  id        String   @id @default(cuid())
+  meetingId String   @unique
+  score     Int
+  feedback  String   @db.Text
+  createdAt DateTime @default(now())
+
+  meeting Meeting @relation(fields: [meetingId], references: [id])
+}
+
+enum MessageSender {
+  USER
+  ASSISTANT
+}
+
+enum MeetingStatus {
+  PENDING
+  QUESTIONNAIRE_READY
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
 }
