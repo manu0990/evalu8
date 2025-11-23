@@ -41,7 +41,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    command: sh -c "pnpm db:migrate && pnpm db:generate && pnpm --filter web dev"
+    command: sh -c "pnpm db:migrate:deploy && pnpm db:generate && pnpm --filter web dev"
     restart: always
 
   ws-server:
@@ -61,7 +61,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    command: sh -c "pnpm db:migrate && pnpm db:generate && pnpm --filter ws-server dev"
+    command: sh -c "pnpm db:migrate:deploy && pnpm db:generate && pnpm --filter ws-server dev"
     restart: always
 
 volumes:
