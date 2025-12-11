@@ -23,7 +23,6 @@
     "prisma": "^7.0.0"
   },
   "license": "ISC",
-  "type": "module",
   "dependencies": {
     "@prisma/adapter-pg": "^7.0.0",
     "@prisma/client": "^7.0.0"
