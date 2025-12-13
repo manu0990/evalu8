@@ -36,13 +36,14 @@ services:
       - GITHUB_CLIENT_SECRET=example-github-client-secret
     volumes:
       - .:/app
+      - /app/node_modules
       - /app/apps/web/node_modules
       - /app/apps/web/.next
+      - /app/packages/db/generated
+    command: pnpm dev:web
     depends_on:
       postgres:
         condition: service_healthy
-    command: sh -c "pnpm db:migrate:deploy && pnpm db:generate && pnpm --filter web dev"
-    restart: always
 
   ws-server:
     build:
@@ -57,12 +58,14 @@ services:
       - DATABASE_URL=postgresql://evalu8_user:evalu8_password@postgres:5432/evalu8_db
     volumes:
       - .:/app
+      - /app/node_modules
       - /app/apps/ws-server/node_modules
+      - /app/apps/ws-server/dist
+      - /app/packages/db/generated
+    command: pnpm dev:ws
     depends_on:
       postgres:
         condition: service_healthy
-    command: sh -c "pnpm db:migrate:deploy && pnpm db:generate && pnpm --filter ws-server dev"
-    restart: always
 
 volumes:
   postgres_data:

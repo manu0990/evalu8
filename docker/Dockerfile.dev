@@ -18,14 +18,13 @@ COPY packages/tailwind-config/package.json ./packages/tailwind-config/
 COPY packages/typescript-config/package.json ./packages/typescript-config/
 COPY packages/ui/package.json ./packages/ui/
 
-# Install all dependencies (this layer will be cached if package files don't change)
-RUN pnpm install --frozen-lockfile
+# Copy Prisma schema for database setup
+COPY packages/db/prisma ./packages/db/prisma/
+COPY packages/db/prisma.config.ts ./packages/db/
+COPY packages/db/src ./packages/db/src/
 
-# Copy prisma schema for code generation
-COPY packages/db/prisma ./packages/db/prisma
-
-# Generate Prisma Client
-RUN pnpm db:generate
+# Install all dependencies
+RUN pnpm install
 
 # Copy the rest of the application code
 COPY . .

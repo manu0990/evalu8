@@ -13,6 +13,10 @@ dist
 */dist
 **/dist
 
+# Prisma generated files
+packages/db/generated
+**/generated/prisma
+
 # Development files
 .env.local
 .env.development.local
