@@ -2,9 +2,9 @@
 
 import { useState } from 'react';
 import { DashboardOverview } from '@/components/app-layout/DashboardOverview';
-import { type Meeting } from '@/components/app-layout/MeetingCard';
 import { DashboardSkeleton } from '@/components/app-layout/Skeleton';
 import { useSession } from 'next-auth/react';
+import { Meeting } from '@/components/app-layout/MeetingGrid';
 
 export default function DashboardPage() {
   const { status } = useSession();

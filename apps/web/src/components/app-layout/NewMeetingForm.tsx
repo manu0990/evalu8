@@ -1,314 +1,375 @@
 'use client';
 
-import { useState } from 'react';
-import { 
-  Card, 
-  CardHeader, 
-  CardContent, 
-  CardFooter, 
-  Button, 
-  Input, 
-  Label 
-} from "@repo/ui";
-import { 
-  Building2, 
-  Upload, 
-  X, 
-  FileText, 
-  Link as LinkIcon,
-  Briefcase,
-  FileCheck
-} from "lucide-react";
+import { useState, useCallback } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useRouter } from 'next/navigation';
+import { Card, CardHeader, CardContent, CardFooter, Button, Input, Textarea, Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@repo/ui";
+import { Building2, FileText, Link, Briefcase, FileCheck, Trash, Paperclip } from "lucide-react";
+import { toast } from 'sonner';
+import { getSignedUrl } from '@/actions/getSignedUrl';
+import { createMeeting } from '@/actions/createMeeting';
+import { deleteFromS3 } from '@/actions/deleteFromS3';
+import axios, { AxiosProgressEvent } from 'axios';
+import { cn } from '@/lib/utils';
+import { newMeetingFormSchema, type newMeetingFormTypes } from '@/lib/validation/meeting';
 
-interface NewMeetingFormProps {
-  onSubmit: (formData: {
-    companyName: string;
-    companyWebsite: string;
-    roleToApply: string;
-    requirements: string;
-    resumeFile: File | null;
-  }) => void;
-  onCancel: () => void;
-  isSubmitting?: boolean;
-  uploadProgress?: number;
-  processingStatus?: string;
-}
-
-export function NewMeetingForm({ onSubmit, onCancel, isSubmitting = false, uploadProgress = 0, processingStatus = '' }: NewMeetingFormProps) {
-  const [formData, setFormData] = useState({
-    companyName: '',
-    companyWebsite: '',
-    roleToApply: '',
-    requirements: ''
-  });
-  
-  const [resumeFile, setResumeFile] = useState<File | null>(null);
-  const [dragActive, setDragActive] = useState(false);
-
-  const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
-
-  const handleFileDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setDragActive(false);
-    
-    const files = e.dataTransfer.files;
-    if (files.length > 0) {
-      const file = files[0];
-      if (file && file.type === 'application/pdf') {
-        setResumeFile(file);
-      } else {
-        alert('Please upload a PDF file only.');
-      }
-    }
-  };
-
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files && files.length > 0) {
-      const file = files[0];
-      if (file && file.type === 'application/pdf') {
-        setResumeFile(file);
-      } else {
-        alert('Please upload a PDF file only.');
-      }
-    }
-  };
-
-  const removeFile = () => {
-    setResumeFile(null);
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!formData.companyName.trim()) {
-      alert('Company name is required');
-      return;
-    }
-    
-    if (!formData.roleToApply.trim()) {
-      alert('Role to apply is required');
-      return;
-    }
-    
-    if (!formData.requirements.trim()) {
-      alert('Job requirements are required');
-      return;
-    }
-    
-    if (!resumeFile) {
-      alert('Resume PDF is required');
-      return;
-    }
-
-    onSubmit({
-      ...formData,
-      resumeFile
-    });
-  };
-
-  const isFormValid = formData.companyName.trim() && 
-                     formData.roleToApply.trim() && 
-                     formData.requirements.trim() && 
-                     resumeFile;
+function CircularProgress({ progress }: { progress: number }) {
+  const radius = 20;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (progress / 100) * circumference;
 
   return (
-    <Card className="max-w-2xl mx-auto">
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-bold">Create New Interview Meeting</h2>
-            <p className="text-muted-foreground mt-1">
-              Set up your AI-powered interview session
-            </p>
-          </div>
-          <Button variant="ghost" size="icon" onClick={onCancel}>
-            <X className="h-5 w-5" />
-          </Button>
-        </div>
-      </CardHeader>
+    <div className="relative w-14 h-14 flex items-center justify-center">
+      <svg className="transform -rotate-90" width="56" height="56">
+        <circle
+          cx="28"
+          cy="28"
+          r={radius}
+          stroke="currentColor"
+          strokeWidth="4"
+          fill="none"
+          className="text-muted"
+        />
+        <circle
+          cx="28"
+          cy="28"
+          r={radius}
+          stroke="currentColor"
+          strokeWidth="4"
+          fill="none"
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          className="text-primary transition-all duration-300"
+          strokeLinecap="round"
+        />
+      </svg>
+      <span className="absolute text-xs font-semibold">{progress}%</span>
+    </div>
+  );
+}
 
-      <form onSubmit={handleSubmit}>
-        <CardContent className="space-y-6">
-          {/* Company Information */}
-          <div className="space-y-4">
-            <div className="flex items-center space-x-2 text-lg font-semibold">
-              <Building2 className="h-5 w-5" />
-              <span>Company Information</span>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="companyName">Company Name *</Label>
-                <Input
-                  id="companyName"
-                  placeholder="e.g., Google, Microsoft, Startup Inc."
-                  value={formData.companyName}
-                  onChange={(e) => handleInputChange('companyName', e.target.value)}
-                  required
+export function NewMeetingForm({ onCancel }: { onCancel: () => void }) {
+  const router = useRouter();
+  const form = useForm<newMeetingFormTypes>({
+    resolver: zodResolver(newMeetingFormSchema),
+    defaultValues: {
+      companyName: '',
+      companyWebsite: '',
+      roleToApply: '',
+      requirements: '',
+      resume: { name: '', key: '', size: 0 }
+    }
+  });
+
+  const [dragActive, setDragActive] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+
+  const resume = form.watch("resume");
+  const isFormValid = Boolean(resume.key && form.watch("companyName") && form.watch("roleToApply") && form.watch("requirements"));
+
+  const resetUploadState = useCallback(() => {
+    setUploading(false);
+    setUploadProgress(0);
+  }, []);
+
+  const handleResumeUpload = useCallback(
+    async (file: File) => {
+      if (file.type !== 'application/pdf') return toast.warning("Only PDF files are allowed");
+      if (file.size > 10 * 1024 * 1024) return toast.warning("File size must be under 10MB");
+
+      form.setValue('resume', { name: file.name, size: file.size, key: '' });
+
+      try {
+        setUploading(true);
+
+        const signed = await getSignedUrl(file.size);
+        if (!signed.success || !signed.data) {
+          toast.error(signed.error || "Failed to get upload URL");
+          return resetUploadState();
+        }
+
+        const { url, key } = signed.data;
+
+        const uploadResponse = await axios.put(url, file, {
+          headers: { 'Content-Type': 'application/pdf' },
+          onUploadProgress: (e: AxiosProgressEvent) => {
+            const total = e.total ?? file.size;
+            setUploadProgress(Math.round((e.loaded / total) * 100));
+          }
+        });
+
+        if (uploadResponse.status !== 200) {
+          toast.error("Failed to upload resume");
+          return resetUploadState();
+        }
+
+        form.setValue("resume.key", key);
+        toast.success("Resume uploaded successfully");
+      } catch (err) {
+        console.error("Upload error:", err);
+        toast.error("An error occurred during upload");
+        form.setValue("resume", { name: '', size: 0, key: '' });
+      } finally {
+        setUploading(false);
+        setUploadProgress(0);
+      }
+    }, [form, resetUploadState]);
+
+  const onFileDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setDragActive(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) handleResumeUpload(file);
+  }, [handleResumeUpload]);
+
+  const onFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) handleResumeUpload(file);
+    // Reset input value to allow selecting the same file again
+    e.target.value = '';
+  }, [handleResumeUpload]);
+
+  const removeFile = async () => {
+    const currentKey = resume.key;
+
+    // Clear form immediately for better UX
+    form.setValue("resume", { name: '', key: '', size: 0 });
+
+    // Delete from S3 if there's a key
+    if (currentKey) {
+      const result = await deleteFromS3(currentKey);
+      if (result.success) {
+        toast.success("File removed");
+      }
+    }
+  };
+
+  const handleSubmit = async (data: newMeetingFormTypes) => {
+    if (!data.resume.key) return toast.error("Resume is required");
+
+    setIsSubmitting(true);
+    try {
+      const result = await createMeeting({
+        companyName: data.companyName,
+        companyWebsite: data.companyWebsite,
+        roleToApply: data.roleToApply,
+        requirements: data.requirements,
+        resume: data.resume,
+      });
+
+      if (!result.success) {
+        toast.error(result.error || "Failed to create meeting");
+        return;
+      }
+      toast.success("Meeting created successfully!");
+
+      // Navigate to meetings page
+      router.push('/meetings');
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to create meeting");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="flex items-center justify-center min-h-[calc(100vh-4rem)] py-6">
+      <Card className="w-full max-w-2xl mx-auto border-accent">
+        <CardHeader>
+          <h2 className="text-2xl font-bold">Create New Meeting</h2>
+          <p className="text-muted-foreground mt-1">Set up your AI-powered interview session</p>
+        </CardHeader>
+
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(handleSubmit)}>
+            <CardContent className="space-y-6">
+
+              {/* Company Information */}
+              <section className="space-y-4">
+                <div className="flex items-center space-x-2 text-lg font-semibold">
+                  <Building2 className="h-5 w-5" />
+                  <span>Company Information</span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="companyName"
+                    rules={{ required: "Company name is required" }}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Company Name <span className='text-destructive'>*</span></FormLabel>
+                        <FormControl>
+                          <Input placeholder="Google Inc." {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="companyWebsite"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Company Website</FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <Link className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                            <Input type="url" placeholder="https://google.com" className="pl-10" {...field} />
+                          </div>
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </section>
+
+              {/* Role Information */}
+              <section className="space-y-4">
+                <div className="flex items-center space-x-2 text-lg font-semibold">
+                  <Briefcase className="h-5 w-5" />
+                  <span>Role Information</span>
+                </div>
+
+                <FormField
+                  control={form.control}
+                  name="roleToApply"
+                  rules={{ required: "Role is required" }}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Role to Apply <span className='text-destructive'>*</span></FormLabel>
+                      <FormControl>
+                        <Input placeholder="Senior Software Engineer" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="companyWebsite">Company Website</Label>
-                <div className="relative">
-                  <LinkIcon className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="companyWebsite"
-                    type="url"
-                    placeholder="https://company.com"
-                    className="pl-10"
-                    value={formData.companyWebsite}
-                    onChange={(e) => handleInputChange('companyWebsite', e.target.value)}
-                  />
+
+                <FormField
+                  control={form.control}
+                  name="requirements"
+                  rules={{ required: "Requirements are required" }}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Job Requirements <span className='text-destructive'>*</span></FormLabel>
+                      <FormControl>
+                        <Textarea placeholder="Paste job description & requirements..." className="min-h-28 max-h-28" {...field} />
+                      </FormControl>
+                      <FormDescription>
+                        Include skills, experience level, and special requirements
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </section>
+
+              {/* Resume Upload */}
+              <section className="space-y-4">
+                <div className="flex items-center space-x-2 text-lg font-semibold">
+                  <FileText className="h-5 w-5" />
+                  <span>Resume <span className='text-destructive'>*</span></span>
                 </div>
-              </div>
-            </div>
-          </div>
 
-          {/* Role Information */}
-          <div className="space-y-4">
-            <div className="flex items-center space-x-2 text-lg font-semibold">
-              <Briefcase className="h-5 w-5" />
-              <span>Role Information</span>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="roleToApply">Role to Apply *</Label>
-              <Input
-                id="roleToApply"
-                placeholder="e.g., Senior Software Engineer, Product Manager"
-                value={formData.roleToApply}
-                onChange={(e) => handleInputChange('roleToApply', e.target.value)}
-                required
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="requirements">Job Requirements *</Label>
-              <textarea
-                id="requirements"
-                className="w-full min-h-[120px] px-3 py-2 border border-input bg-background text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 rounded-md"
-                placeholder="Paste the job description or key requirements here..."
-                value={formData.requirements}
-                onChange={(e) => handleInputChange('requirements', e.target.value)}
-                required
-              />
-              <p className="text-xs text-muted-foreground">
-                Include key skills, experience level, and specific requirements mentioned in the job posting
-              </p>
-            </div>
-          </div>
+                <Input type="file" accept="application/pdf" className="hidden" id="resume-input" onChange={onFileSelect} />
 
-          {/* Resume Upload */}
-          <div className="space-y-4">
-            <div className="flex items-center space-x-2 text-lg font-semibold">
-              <FileText className="h-5 w-5" />
-              <span>Resume Upload</span>
-            </div>
-            
-            {!resumeFile ? (
-              <div
-                className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-                  dragActive 
-                    ? 'border-primary bg-primary/5' 
-                    : 'border-muted-foreground/25 hover:border-primary/50'
-                }`}
-                onDrop={handleFileDrop}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  setDragActive(true);
-                }}
-                onDragLeave={() => setDragActive(false)}
-              >
-                <Upload className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
-                <div className="space-y-2">
-                  <p className="text-lg font-medium">Upload your resume</p>
-                  <p className="text-sm text-muted-foreground">
-                    Drag and drop your PDF file here, or click to browse
-                  </p>
-                  <input
-                    type="file"
-                    accept=".pdf"
-                    onChange={handleFileSelect}
-                    className="hidden"
-                    id="resume-upload"
-                  />
-                  <Button 
-                    type="button" 
-                    variant="outline"
-                    onClick={() => document.getElementById('resume-upload')?.click()}
+                {!resume.name ? (
+                  /* Upload Button / Drag-and-Drop Area */
+                  <div
+                    className={cn(
+                      "border-2 border-dashed border-accent rounded-lg transition-colors",
+                      "p-3 md:p-8 text-center",
+                      dragActive && "border-primary bg-primary/5"
+                    )}
+                    onDrop={onFileDrop}
+                    onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
+                    onDragLeave={() => setDragActive(false)}
                   >
-                    Choose File
-                  </Button>
-                  <p className="text-xs text-muted-foreground">
-                    PDF files only, max 10MB
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <div className="border rounded-lg p-4 bg-primary/10">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <FileCheck className="h-8 w-8 text-primary" />
-                    <div>
-                      <p className="font-medium">{resumeFile.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {(resumeFile.size / 1024 / 1024).toFixed(2)} MB
-                      </p>
+                    <div className="flex md:items-center md:justify-center md:gap-3">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => document.getElementById("resume-input")?.click()}
+                        disabled={isUploading}
+                        className="h-10 md:h-12 w-full md:w-40 rounded-full cursor-pointer"
+                      >
+                        <Paperclip className="h-4 w-4 mr-2" />
+                        Upload File
+                      </Button>
+                      <span className="hidden md:inline text-muted-foreground">or drag and drop here</span>
                     </div>
                   </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={removeFile}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            )}
-          </div>
-        </CardContent>
+                ) : (
+                  /* File Display - Uploading or Uploaded */
+                  <div className={cn(
+                    "border rounded-lg bg-card",
+                    resume.key ? "border-accent p-4" : "border-accent p-3 md:p-4"
+                  )}>
+                    <div className="flex items-center gap-3 md:gap-4">
+                      {isUploading ? (
+                        <CircularProgress progress={uploadProgress} />
+                      ) : resume.key ? (
+                        <Paperclip className="h-5 w-5 md:h-5 md:w-5 text-primary shrink-0" />
+                      ) : (
+                        <FileCheck className="h-8 w-8 md:h-10 md:w-10 text-primary shrink-0" />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">{resume.name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {(resume.size / 1024 / 1024).toFixed(2)} MB
+                        </p>
+                      </div>
+                      {!isUploading && (
+                        <Button
+                          variant="ghost"
+                          size={resume.key ? "icon-lg" : "icon"}
+                          onClick={removeFile}
+                          className={cn(
+                            "cursor-pointer rounded-full shrink-0",
+                            resume.key && "h-12 w-12 text-destructive hover:bg-primary hover:text-white transition"
+                          )}
+                        >
+                          <Trash className={cn("h-4 w-4", resume.key && "h-5 w-5")} />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </section>
 
-        <CardFooter className="flex justify-between">
-          <Button type="button" variant="outline" onClick={onCancel}>
-            Cancel
-          </Button>
-          <div className="flex flex-col items-end space-y-2">
-            {isSubmitting && processingStatus && (
-              <div className="text-sm text-muted-foreground text-right">
-                {processingStatus}
+            </CardContent>
+
+            <CardFooter className="flex flex-col gap-4 mt-8">
+              <div className="flex justify-between w-full">
+                <Button
+                  type="button"
+                  variant="destructive"
+                  onClick={onCancel}
+                  disabled={isSubmitting || isUploading}
+                  className='cursor-pointer'
+                >
+                  Cancel
+                </Button>
+
+                <Button
+                  type="submit"
+                  disabled={!isFormValid || isSubmitting || isUploading}
+                  className='cursor-pointer'
+                >
+                  {isSubmitting ? "Processing..." : "Create Meeting"}
+                </Button>
               </div>
-            )}
-            {isSubmitting && uploadProgress > 0 && uploadProgress < 100 && (
-              <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                <div className="w-32 bg-muted rounded-full h-2">
-                  <div 
-                    className="bg-primary h-2 rounded-full transition-all duration-300" 
-                    style={{ width: `${uploadProgress}%` }}
-                  ></div>
-                </div>
-                <span>{uploadProgress}%</span>
-              </div>
-            )}
-            <Button 
-              type="submit" 
-              disabled={!isFormValid || isSubmitting}
-            >
-              {isSubmitting ? (
-                uploadProgress > 0 && uploadProgress < 100 ? 'Uploading...' : 'Creating...'
-              ) : 'Create Meeting'}
-            </Button>
-          </div>
-        </CardFooter>
-      </form>
-    </Card>
+            </CardFooter>
+
+          </form>
+        </Form>
+      </Card>
+    </div>
   );
 }

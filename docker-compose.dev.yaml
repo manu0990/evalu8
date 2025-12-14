@@ -24,6 +24,11 @@ services:
     container_name: evalu8_web  
     ports:
       - "3000:3000"
+    # Required on some hosts to resolve public AWS endpoints
+    # Else might get "Failed to fetch (EAI_AGAIN)" error
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     environment:
       - NODE_ENV=development
       - CHOKIDAR_USEPOLLING=true
@@ -34,6 +39,11 @@ services:
       - GOOGLE_CLIENT_SECRET=example-google-client-secret
       - GITHUB_CLIENT_ID=example-github-client-id
       - GITHUB_CLIENT_SECRET=example-github-client-secret
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - AWS_REGION=${AWS_REGION}
+      - AWS_S3_BUCKET_NAME=${AWS_S3_BUCKET_NAME}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
     volumes:
       - .:/app
       - /app/node_modules

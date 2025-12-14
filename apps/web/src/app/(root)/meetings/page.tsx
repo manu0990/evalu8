@@ -1,83 +1,54 @@
 'use client';
 
-import { useState } from 'react';
-import { MeetingGrid, type Meeting } from '@/components/app-layout/MeetingCard';
+import { useState, useEffect } from 'react';
+import { MeetingGrid, type Meeting } from '@/components/app-layout/MeetingGrid';
 import { NewMeetingForm } from '@/components/app-layout/NewMeetingForm';
+import { getMeetings } from '@/actions/getMeetings';
+import { toast } from 'sonner';
 
 export default function MeetingsPage() {
   const [showNewMeetingForm, setShowNewMeetingForm] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [meetings, setMeetings] = useState<Meeting[]>([]);
 
-  // Mock data - replace with actual API calls
-  const [meetings, setMeetings] = useState<Meeting[]>([
-    {
-      id: '1',
-      companyName: 'Google',
-      companyWebsite: 'https://google.com',
-      roleToApply: 'Senior Software Engineer',
-      requirements: 'Looking for experienced engineers with strong background in distributed systems and cloud technologies.',
-      status: 'QUESTIONNAIRE_READY',
-      createdAt: new Date().toISOString(),
-    },
-    {
-      id: '2',
-      companyName: 'Microsoft',
-      companyWebsite: 'https://microsoft.com',
-      roleToApply: 'Product Manager',
-      requirements: 'Seeking a product manager with 5+ years of experience in enterprise software.',
-      status: 'PENDING',
-      createdAt: new Date(Date.now() - 86400000).toISOString(),
-    },
-    {
-      id: '3',
-      companyName: 'Amazon',
-      roleToApply: 'Data Scientist',
-      requirements: 'Machine learning expert with strong statistical background and Python expertise.',
-      status: 'COMPLETED',
-      createdAt: new Date(Date.now() - 172800000).toISOString(),
-      completedAt: new Date(Date.now() - 86400000).toISOString(),
-    },
-  ]);
+  // fetch meetings from database
+  const fetchMeetings = async () => {
+    try {
+      const result = await getMeetings();
+
+      if (!result.success) {
+        toast.error(result.error || "Failed to fetch meetings");
+        return;
+      }
+
+      if (result.data) {
+        setMeetings(result.data);
+      }
+    } catch (error) {
+      console.error("Error fetching meetings:", error);
+      toast.error("Failed to load meetings");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // initial fetch on mount
+  useEffect(() => {
+    fetchMeetings();
+  }, []);
 
   const handleCreateMeeting = () => {
     setShowNewMeetingForm(true);
   };
 
-  const handleSubmitMeeting = async (formData: {
-    companyName: string;
-    companyWebsite: string;
-    roleToApply: string;
-    requirements: string;
-    resumeFile: File | null;
-  }) => {
-    setIsLoading(true);
-
-    // Simulate API call
-    setTimeout(() => {
-      const newMeeting: Meeting = {
-        id: Date.now().toString(),
-        companyName: formData.companyName,
-        companyWebsite: formData.companyWebsite,
-        roleToApply: formData.roleToApply,
-        requirements: formData.requirements,
-        status: 'PENDING',
-        createdAt: new Date().toISOString(),
-      };
-
-      setMeetings([newMeeting, ...meetings]);
-      setShowNewMeetingForm(false);
-      setIsLoading(false);
-    }, 6000);
-  };
-
   const handleStartMeeting = (meetingId: string) => {
     console.log('Starting meeting:', meetingId);
-    // Implement meeting start logic
+    // TODO: Implement meeting start logic
   };
 
   const handleViewMeeting = (meetingId: string) => {
     console.log('Viewing meeting:', meetingId);
-    // Implement meeting view logic
+    // TODO: Implement meeting view logic
   };
 
   return (
@@ -95,9 +66,7 @@ export default function MeetingsPage() {
 
           {showNewMeetingForm ? (
             <NewMeetingForm
-              onSubmit={handleSubmitMeeting}
               onCancel={() => setShowNewMeetingForm(false)}
-              isSubmitting={isLoading}
             />
           ) : (
             <MeetingGrid
@@ -105,6 +74,7 @@ export default function MeetingsPage() {
               onStart={handleStartMeeting}
               onView={handleViewMeeting}
               onCreateNew={handleCreateMeeting}
+              isLoading={isLoading}
             />
           )}
         </div>

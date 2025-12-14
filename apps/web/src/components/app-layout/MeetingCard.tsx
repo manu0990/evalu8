@@ -1,30 +1,10 @@
 'use client';
 
 import { Card, CardHeader, CardContent, CardFooter, Button, Badge } from "@repo/ui";
-import { 
-  Building2, 
-  Calendar, 
-  Clock, 
-  Play, 
-  Eye, 
-  MoreHorizontal,
-  ExternalLink
-} from "lucide-react";
-import { EmptyState } from "./EmptyState";
+import { Building2, Calendar, Clock, Play, Eye, MoreHorizontal, ExternalLink } from "lucide-react";
+import { Meeting } from "./MeetingGrid";
 
 export type MeetingStatus = 'PENDING' | 'QUESTIONNAIRE_READY' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
-
-export interface Meeting {
-  id: string;
-  companyName: string;
-  companyWebsite?: string;
-  roleToApply: string;
-  requirements: string;
-  status: MeetingStatus;
-  createdAt: string;
-  startedAt?: string;
-  completedAt?: string;
-}
 
 interface MeetingCardProps {
   meeting: Meeting;
@@ -45,7 +25,7 @@ const statusConfig = {
   },
   IN_PROGRESS: {
     label: 'In Progress',
-    variant: 'destructive' as const,
+    variant: 'secondary' as const,
     description: 'Interview session is active'
   },
   COMPLETED: {
@@ -55,13 +35,13 @@ const statusConfig = {
   },
   CANCELLED: {
     label: 'Cancelled',
-    variant: 'outline' as const,
+    variant: 'destructive' as const,
     description: 'Interview session was cancelled'
   }
 };
 
 export function MeetingCard({ meeting, onStart, onView }: MeetingCardProps) {
-  const status = statusConfig[meeting.status];
+  const status = statusConfig[meeting.status as MeetingStatus];
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       month: 'short',
@@ -89,14 +69,14 @@ export function MeetingCard({ meeting, onStart, onView }: MeetingCardProps) {
               <Building2 className="h-4 w-4 text-muted-foreground" />
               <h3 className="font-semibold text-lg">{meeting.companyName}</h3>
               {meeting.companyWebsite && (
-                <Button 
-                  variant="ghost" 
+                <Button
+                  variant="ghost"
                   size="icon-sm"
                   asChild
                 >
-                  <a 
-                    href={meeting.companyWebsite} 
-                    target="_blank" 
+                  <a
+                    href={meeting.companyWebsite}
+                    target="_blank"
                     rel="noopener noreferrer"
                   >
                     <ExternalLink className="h-3 w-3" />
@@ -106,7 +86,7 @@ export function MeetingCard({ meeting, onStart, onView }: MeetingCardProps) {
             </div>
             <p className="text-sm font-medium text-primary">{meeting.roleToApply}</p>
           </div>
-          
+
           <div className="flex items-center space-x-2">
             <Badge variant={status.variant}>
               {status.label}
@@ -123,7 +103,7 @@ export function MeetingCard({ meeting, onStart, onView }: MeetingCardProps) {
           <p className="text-sm text-muted-foreground line-clamp-2">
             {meeting.requirements}
           </p>
-          
+
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-1">
@@ -138,7 +118,7 @@ export function MeetingCard({ meeting, onStart, onView }: MeetingCardProps) {
               )}
             </div>
           </div>
-          
+
           <div className="text-xs text-muted-foreground">
             {status.description}
           </div>
@@ -148,7 +128,7 @@ export function MeetingCard({ meeting, onStart, onView }: MeetingCardProps) {
       <CardFooter>
         <div className="flex space-x-2 w-full">
           {canStart && (
-            <Button 
+            <Button
               className="flex-1"
               onClick={() => onStart(meeting.id)}
             >
@@ -156,9 +136,9 @@ export function MeetingCard({ meeting, onStart, onView }: MeetingCardProps) {
               Start Interview
             </Button>
           )}
-          
+
           {canView && (
-            <Button 
+            <Button
               variant="outline"
               className="flex-1"
               onClick={() => onView(meeting.id)}
@@ -167,20 +147,20 @@ export function MeetingCard({ meeting, onStart, onView }: MeetingCardProps) {
               View Results
             </Button>
           )}
-          
+
           {meeting.status === 'PENDING' && (
-            <Button 
-              variant="outline" 
-              className="flex-1" 
+            <Button
+              variant="outline"
+              className="flex-1"
               disabled
             >
               <Clock className="mr-2 h-4 w-4" />
               Processing...
             </Button>
           )}
-          
+
           {meeting.status === 'IN_PROGRESS' && (
-            <Button 
+            <Button
               variant="destructive"
               className="flex-1"
               onClick={() => onStart(meeting.id)}
@@ -192,41 +172,5 @@ export function MeetingCard({ meeting, onStart, onView }: MeetingCardProps) {
         </div>
       </CardFooter>
     </Card>
-  );
-}
-
-interface MeetingGridProps {
-  meetings: Meeting[];
-  onStart: (meetingId: string) => void;
-  onView: (meetingId: string) => void;
-  onCreateNew?: () => void;
-}
-
-export function MeetingGrid({ meetings, onStart, onView, onCreateNew }: MeetingGridProps) {
-  if (meetings.length === 0) {
-    return (
-      <EmptyState
-        icon={Building2}
-        title="No meetings yet"
-        description="Create your first interview meeting to start practicing and improving your interview skills."
-        action={onCreateNew ? {
-          label: "Create Meeting",
-          onClick: onCreateNew
-        } : undefined}
-      />
-    );
-  }
-
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-      {meetings.map((meeting) => (
-        <MeetingCard
-          key={meeting.id}
-          meeting={meeting}
-          onStart={onStart}
-          onView={onView}
-        />
-      ))}
-    </div>
   );
 }

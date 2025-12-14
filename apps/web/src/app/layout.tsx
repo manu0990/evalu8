@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { Inter, EB_Garamond, Space_Mono, Roboto, Poppins, Playfair_Display } from "next/font/google";
-import { Toaster } from "@repo/ui";
 import { AuthProvider } from "@/components/providers/SessionProvider";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { FontProvider } from "@/components/providers/FontProvider";
+import { ResponsiveToaster } from "@/components/ResponsiveToaster";
 import "./globals.css";
 
 const inter = Inter({
@@ -70,7 +70,7 @@ export default function RootLayout({
           <FontProvider>
             <AuthProvider>
               {children}
-              <Toaster richColors closeButton position="bottom-right" />
+              <ResponsiveToaster />
             </AuthProvider>
           </FontProvider>
         </ThemeProvider>
