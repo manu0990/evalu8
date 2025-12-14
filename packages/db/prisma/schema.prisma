@@ -62,6 +62,7 @@ model VerificationToken {
 model Meeting {
   id             String        @id @default(cuid())
   userId         String
+  resumeId       String
   companyName    String
   companyWebsite String?
   roleToApply    String
@@ -71,11 +72,11 @@ model Meeting {
   updatedAt      DateTime      @updatedAt
   completedAt    DateTime?
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resume Resume @relation(fields: [resumeId], references: [id])
 
   messages           Message[]
   evaluation         Evaluation?
-  resumes            Resume[]
   interviewBlueprint InterviewBlueprint?
 }
 
@@ -90,15 +91,14 @@ model Message {
 }
 
 model Resume {
-  id        String @id @default(cuid())
-  userId    String
-  meetingId String
-  name      String
-  size      Float
-  s3Key     String
+  id     String @id @default(cuid())
+  userId String
+  name   String
+  size   Float
+  s3Key  String
 
-  meeting Meeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  meetings Meeting[]
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Evaluation {
