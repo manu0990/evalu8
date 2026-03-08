@@ -15,7 +15,8 @@
     "AWS_S3_BUCKET_NAME",
     "AWS_ACCESS_KEY_ID",
     "AWS_SECRET_ACCESS_KEY",
-    "GEMINI_API_KEY"
+    "GEMINI_API_KEY",
+    "LLM_MODEL"
   ],
   "tasks": {
     "build": {
@@ -34,7 +35,8 @@
         "AWS_S3_BUCKET_NAME",
         "AWS_ACCESS_KEY_ID",
         "AWS_SECRET_ACCESS_KEY",
-        "GEMINI_API_KEY"
+        "GEMINI_API_KEY",
+        "LLM_MODEL"
       ]
     },
     "lint": {
@@ -51,7 +53,8 @@
         "AWS_S3_BUCKET_NAME",
         "AWS_ACCESS_KEY_ID",
         "AWS_SECRET_ACCESS_KEY",
-        "GEMINI_API_KEY"
+        "GEMINI_API_KEY",
+        "LLM_MODEL"
       ]
     },
     "check-types": {
@@ -68,7 +71,8 @@
         "AWS_S3_BUCKET_NAME",
         "AWS_ACCESS_KEY_ID",
         "AWS_SECRET_ACCESS_KEY",
-        "GEMINI_API_KEY"
+        "GEMINI_API_KEY",
+        "LLM_MODEL"
       ]
     },
     "dev": {
@@ -86,7 +90,8 @@
         "AWS_S3_BUCKET_NAME",
         "AWS_ACCESS_KEY_ID",
         "AWS_SECRET_ACCESS_KEY",
-        "GEMINI_API_KEY"
+        "GEMINI_API_KEY",
+        "LLM_MODEL"
       ]
     }
   }

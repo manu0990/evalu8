@@ -1,19 +1,47 @@
-import { WebSocketServer } from "ws";
+import { WebSocketServer, WebSocket } from "ws";
+import { Conversation } from "./services/conversationService";
+import { streamCompletion } from "./services/geminiService";
+import { config } from "./ws-env.config";
 
-const port = process.env.WS_PORT;
+export function startWebSocketServer() {
 
-const ws = new WebSocketServer({ port: port ? Number(port) : 8080 });
+  const wss = new WebSocketServer({ port: Number(config.wsPort) });
 
-ws.on("connection", (socket) => {
-  console.log("New client connected");
+  wss.on("connection", (socket: WebSocket) => {
+    console.log("Client connected");
 
-  socket.on("message", (message) => {
-    console.log(`Received message: ${message}`);
+    const conversation = new Conversation();
+
+    socket.on("message", async (data) => {
+      const userMessage = data.toString();
+
+      conversation.addUserMessage(userMessage);
+
+      const stream = await streamCompletion(conversation.getHistory());
+
+      let assistantResponse = "";
+
+      for await (const chunk of stream) {
+        if (socket.readyState !== WebSocket.OPEN) break;
+
+        // const token = chunk.choices[0]?.delta?.content || "";
+        const token = chunk.text || "";
+
+        if (token) {
+          assistantResponse += token;
+          socket.send(token);
+        }
+      }
+
+      conversation.addAssistantMessage(assistantResponse);
+
+      socket.send("[DONE]");
+    });
+
+    socket.on("close", () => {
+      console.log("Client disconnected");
+    });
   });
 
-  socket.on("close", () => {
-    console.log("Client disconnected");
-  });
-});
-
-console.log("WebSocket server is running on ws://localhost:8080");
+  console.log(`WS server running on ws://localhost:${config.wsPort}`);
+}

@@ -66,7 +66,9 @@ services:
       - NODE_ENV=development
       - CHOKIDAR_USEPOLLING=true
       - DATABASE_URL=postgresql://evalu8_user:evalu8_password@postgres:5432/evalu8_db
-      - WS_PORT=8080
+      - WS_PORT=${WS_PORT:-8080}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - LLM_MODEL=${LLM_MODEL}
     volumes:
       - .:/app
       - /app/node_modules

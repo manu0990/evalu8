@@ -3,25 +3,28 @@
   "version": "1.0.0",
   "type": "module",
   "description": "",
-  "main": "index.js",
+  "main": "src/server.ts",
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
   "scripts": {
-    "dev": "npm run build && node dist/index.js",
+    "dev": "tsx watch src/server.ts",
     "build": "tsc -b ",
     "start": "node dist/index.js",
     "check-types": "tsc --noEmit",
     "lint": "eslint . --max-warnings 0"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "dependencies": {
-    "ws": "^8.18.3",
-    "@repo/db": "workspace:*"
+    "@google/genai": "^1.44.0",
+    "@repo/db": "workspace:*",
+    "dotenv": "^17.2.3",
+    "ws": "^8.19.0"
   },
   "devDependencies": {
-    "@repo/typescript-config": "workspace:*",
     "@repo/eslint-config": "workspace:*",
+    "@repo/typescript-config": "workspace:*",
     "@types/ws": "^8.18.1",
-    "eslint": "^9.31.0"
+    "eslint": "^9.39.3",
+    "tsx": "^4.21.0"
   }
 }
