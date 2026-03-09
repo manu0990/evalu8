@@ -15,10 +15,11 @@ model User {
   image         String?
   password      String?
 
-  accounts Account[]
-  sessions Session[]
-  meetings Meeting[]
-  resumes  Resume[]
+  accounts  Account[]
+  sessions  Session[]
+  meetings  Meeting[]
+  resumes   Resume[]
+  wsTickets WsTicket[]
 }
 
 model Account {
@@ -78,6 +79,7 @@ model Meeting {
   messages           Message[]
   evaluation         Evaluation?
   interviewBlueprint InterviewBlueprint?
+  wsTickets          WsTicket[]
 }
 
 model Message {
@@ -135,4 +137,14 @@ enum MeetingStatus {
   IN_PROGRESS
   COMPLETED
   CANCELLED
+}
+
+model WsTicket {
+  id        String   @id @default(cuid())
+  userId    String
+  meetingId String
+  expiresAt DateTime
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  meeting Meeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
 }
