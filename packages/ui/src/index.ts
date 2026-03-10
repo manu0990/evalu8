@@ -12,7 +12,7 @@ export {
   AlertDialogAction,
   AlertDialogCancel,
 } from "@/components/alert-dialog";
-export { 
+export {
   NavigationMenu,
   NavigationMenuList,
   NavigationMenuItem,
@@ -23,7 +23,7 @@ export {
   NavigationMenuViewport,
   navigationMenuTriggerStyle
 } from "@/components/navigation-menu";
-export { 
+export {
   Sheet,
   SheetTrigger,
   SheetClose,
@@ -33,7 +33,7 @@ export {
   SheetTitle,
   SheetDescription
 } from "@/components/sheet";
-export { 
+export {
   Card,
   CardHeader,
   CardFooter,
@@ -42,7 +42,7 @@ export {
   CardContent
 } from "@/components/card";
 export { Badge } from "@/components/badge";
-export { 
+export {
   Accordion,
   AccordionContent,
   AccordionItem,
@@ -99,8 +99,14 @@ export {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
+  DropdownMenuLabel,
   DropdownMenuItem,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
 } from "@/components/dropdown-menu";
 export {
   Select,

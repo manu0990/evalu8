@@ -18,8 +18,8 @@
     "db:reset": "pnpm --filter @repo/db reset"
   },
   "devDependencies": {
-    "prettier": "^3.6.2",
-    "turbo": "^2.5.8",
+    "prettier": "^3.8.1",
+    "turbo": "^2.8.13",
     "typescript": "5.8.3"
   },
   "packageManager": "pnpm@9.0.0",
@@ -27,6 +27,6 @@
     "node": ">=18"
   },
   "dependencies": {
-    "@tailwindcss/postcss": "^4.1.16"
+    "@tailwindcss/postcss": "^4.2.1"
   }
 }

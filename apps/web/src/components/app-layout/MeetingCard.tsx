@@ -1,7 +1,7 @@
 'use client';
 
 import { Card, CardHeader, CardContent, CardFooter, Button, Badge } from "@repo/ui";
-import { Building2, Calendar, Clock, Play, Eye, MoreHorizontal, ExternalLink } from "lucide-react";
+import { Building2, Calendar, Clock, Play, Eye, MoreHorizontal, ExternalLink, X } from "lucide-react";
 import { Meeting } from "./MeetingGrid";
 
 export type MeetingStatus = 'PENDING' | 'QUESTIONNAIRE_READY' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
@@ -12,7 +12,7 @@ interface MeetingCardProps {
   onView: (meetingId: string) => void;
 }
 
-const statusConfig = {
+export const statusConfig = {
   PENDING: {
     label: 'Processing',
     variant: 'secondary' as const,
@@ -57,8 +57,66 @@ export function MeetingCard({ meeting, onStart, onView }: MeetingCardProps) {
     });
   };
 
-  const canStart = meeting.status === 'QUESTIONNAIRE_READY';
-  const canView = meeting.status === 'COMPLETED';
+  const renderActionButton = () => {
+    switch (meeting.status) {
+      case 'COMPLETED':
+        return (
+          <Button
+            variant="outline"
+            className="flex-1 cursor-pointer"
+            onClick={() => onView(meeting.id)}
+          >
+            <Eye className="mr-2 h-4 w-4" />
+            View Results
+          </Button>
+        );
+      case 'QUESTIONNAIRE_READY':
+        return (
+          <Button
+            className="flex-1 cursor-pointer"
+            onClick={() => onStart(meeting.id)}
+          >
+            <Play className="mr-2 h-4 w-4" />
+            Start Interview
+          </Button>
+        );
+      case 'IN_PROGRESS':
+        return (
+          <Button
+            variant="destructive"
+            className="flex-1 cursor-pointer"
+            onClick={() => onStart(meeting.id)}
+          >
+            <Play className="mr-2 h-4 w-4" />
+            Resume Interview
+          </Button>
+        );
+      case 'PENDING':
+        return (
+          <Button
+            variant="outline"
+            className="flex-1 cursor-pointer"
+            disabled
+          >
+            <Clock className="mr-2 h-4 w-4" />
+            Processing...
+          </Button>
+        );
+      case 'CANCELLED':
+        return (
+          <Button
+            variant="destructive"
+            className="flex-1 cursor-pointer"
+            disabled
+          >
+            <X className="mr-2 h-4 w-4" />
+            Cancelled
+          </Button>
+        );
+      default:
+        return null;
+    }
+  };
 
   return (
     <Card className="group hover:shadow-md transition-shadow">
@@ -127,48 +185,7 @@ export function MeetingCard({ meeting, onStart, onView }: MeetingCardProps) {
 
       <CardFooter>
         <div className="flex space-x-2 w-full">
-          {canStart && (
-            <Button
-              className="flex-1"
-              onClick={() => onStart(meeting.id)}
-            >
-              <Play className="mr-2 h-4 w-4" />
-              Start Interview
-            </Button>
-          )}
-
-          {canView && (
-            <Button
-              variant="outline"
-              className="flex-1"
-              onClick={() => onView(meeting.id)}
-            >
-              <Eye className="mr-2 h-4 w-4" />
-              View Results
-            </Button>
-          )}
-
-          {meeting.status === 'PENDING' && (
-            <Button
-              variant="outline"
-              className="flex-1"
-              disabled
-            >
-              <Clock className="mr-2 h-4 w-4" />
-              Processing...
-            </Button>
-          )}
-
-          {meeting.status === 'IN_PROGRESS' && (
-            <Button
-              variant="destructive"
-              className="flex-1"
-              onClick={() => onStart(meeting.id)}
-            >
-              <Play className="mr-2 h-4 w-4" />
-              Resume Interview
-            </Button>
-          )}
+          {renderActionButton()}
         </div>
       </CardFooter>
     </Card>
