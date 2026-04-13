@@ -31,6 +31,7 @@ export default function InterviewPage({ params }: { params: Promise<{ id: string
 
   const wsRef = useRef<WebSocket | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
+  const gainNodeRef = useRef<GainNode | null>(null);
   const nextStartTimeRef = useRef<number>(0);
   const isReceivingRef = useRef(false);
   const connectionSeqRef = useRef(0);
@@ -47,6 +48,11 @@ export default function InterviewPage({ params }: { params: Promise<{ id: string
 
       audioCtxRef.current = new Ctx({ sampleRate: SAMPLE_RATE });
       nextStartTimeRef.current = audioCtxRef.current.currentTime;
+
+      // Create a gain node for mute control
+      const gainNode = audioCtxRef.current.createGain();
+      gainNode.connect(audioCtxRef.current.destination);
+      gainNodeRef.current = gainNode;
     }
   }, []);
 
@@ -73,7 +79,7 @@ export default function InterviewPage({ params }: { params: Promise<{ id: string
 
     const source = audioCtx.createBufferSource();
     source.buffer = buf;
-    source.connect(audioCtx.destination);
+    source.connect(gainNodeRef.current!);
 
     const startTime = Math.max(nextStartTimeRef.current, audioCtx.currentTime);
     source.start(startTime);
@@ -86,6 +92,13 @@ export default function InterviewPage({ params }: { params: Promise<{ id: string
       }
     }, Math.max(0, nextStartTimeRef.current - audioCtx.currentTime) * 1000);
   }, [initAudioCtx]);
+
+  // ── Sync mute state with gain node ──
+  useEffect(() => {
+    if (gainNodeRef.current) {
+      gainNodeRef.current.gain.value = isAudioOn ? 1 : 0;
+    }
+  }, [isAudioOn]);
 
   // ── Connect to WS server ──
   useEffect(() => {
@@ -274,11 +287,11 @@ export default function InterviewPage({ params }: { params: Promise<{ id: string
                 {messages.map((msg, idx) => (
                   <div key={idx} className="flex gap-4">
                     {msg.role === 'ai' ? (
-                      <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 border border-primary/30">
+                      <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center shrink-0 border border-primary/30">
                         <span className="text-xs font-bold text-primary">AI</span>
                       </div>
                     ) : (
-                      <div className="h-8 w-8 rounded-full bg-secondary flex items-center justify-center flex-shrink-0 border border-border">
+                      <div className="h-8 w-8 rounded-full bg-secondary flex items-center justify-center shrink-0 border border-border">
                         <span className="text-xs font-bold text-secondary-foreground">ME</span>
                       </div>
                     )}
@@ -293,7 +306,7 @@ export default function InterviewPage({ params }: { params: Promise<{ id: string
 
                 {aiStatus === 'thinking' && (
                   <div className="flex gap-4 opacity-50">
-                    <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
+                    <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
                       <span className="text-xs font-bold text-primary">AI</span>
                     </div>
                     <div className="space-y-1 pt-2">
