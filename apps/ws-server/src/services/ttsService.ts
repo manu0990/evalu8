@@ -1,11 +1,12 @@
 import Cartesia from "@cartesia/cartesia-js";
 import { WebSocket } from "ws";
+import { config } from "../ws-env.config";
 
-const client = new Cartesia({
-  apiKey: process.env.CARTESIA_API_KEY!,
+const cartesiaClient = new Cartesia({
+  apiKey: config.cartesiaApiKey,
 });
 
-type TTSWebSocket = Awaited<ReturnType<typeof client.tts.websocket>>;
+type TTSWebSocket = Awaited<ReturnType<typeof cartesiaClient.tts.websocket>>;
 type TTSContext = ReturnType<TTSWebSocket["context"]>;
 
 const getErrorMessage = (err: unknown) =>
@@ -22,7 +23,7 @@ export class TTSService {
   }
 
   async init() {
-    this.ws = await client.tts.websocket();
+    this.ws = await cartesiaClient.tts.websocket();
 
     this.ws.on("error", (err) => {
       console.error("Cartesia WS error:", getErrorMessage(err));
@@ -49,7 +50,7 @@ export class TTSService {
       },
     });
 
-    // Start forwarding audio chunks to the client in the background
+    // Start forwarding audio chunks to the cartesiaClient in the background
     this.receiveAudio(this.ctx);
   }
 
