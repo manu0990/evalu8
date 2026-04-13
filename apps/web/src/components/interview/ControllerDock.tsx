@@ -179,7 +179,7 @@ export function ControllerDock({
               <Activity className="mr-2 h-4 w-4" /> Re-sync transcript
             </DropdownMenuItem>
             <DropdownMenuItem className="focus:bg-accent focus:text-accent-foreground cursor-pointer">
-              <span className="text-xs text-muted-foreground">I didn't hear that</span>
+              <span className="text-xs text-muted-foreground">I didn&apos;t hear that</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

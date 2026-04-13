@@ -1,11 +1,17 @@
 'use client';
 
-import { use, useState, useEffect, useRef } from 'react';
-import { Wifi } from 'lucide-react';
+import { use, useState, useEffect, useRef, useCallback } from 'react';
+import { Wifi, Send } from 'lucide-react';
 import { Badge } from '@repo/ui';
 import { InterviewCard } from '@/components/interview/InterviewCard';
 import { ControllerDock } from '@/components/interview/ControllerDock';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
+import axios from 'axios';
+
+const SAMPLE_RATE = 44100;
+type WindowWithWebKitAudioContext = Window & typeof globalThis & {
+  webkitAudioContext?: typeof AudioContext;
+};
 
 export default function InterviewPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
@@ -17,71 +23,214 @@ export default function InterviewPage({ params }: { params: Promise<{ id: string
   const [selectedMic, setSelectedMic] = useState("Default Microphone");
   const [selectedSpeaker, setSelectedSpeaker] = useState("Default Speaker");
 
-  const [wsStatus, setWsStatus] = useState<"connecting" | "connected" | "disconnected">("connecting");
+  const [aiStatus, setAiStatus] = useState<"idle" | "thinking" | "speaking">("idle");
+  const [input, setInput] = useState("");
+  const [messages, setMessages] = useState<{ role: 'user' | 'ai', content: string }[]>([]);
+  const [isConnected, setIsConnected] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+
   const wsRef = useRef<WebSocket | null>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const nextStartTimeRef = useRef<number>(0);
+  const isReceivingRef = useRef(false);
+  const connectionSeqRef = useRef(0);
 
   const router = useRouter();
 
-  useEffect(() => {
-    if (!meetingId) {
-      setWsStatus("disconnected");
-      return;
+  // ── Audio playback for binary TTS chunks from WS server ──
+  const initAudioCtx = useCallback(() => {
+    if (!audioCtxRef.current) {
+      const Ctx = window.AudioContext || (window as WindowWithWebKitAudioContext).webkitAudioContext;
+      if (!Ctx) {
+        throw new Error("AudioContext is not supported in this browser");
+      }
+
+      audioCtxRef.current = new Ctx({ sampleRate: SAMPLE_RATE });
+      nextStartTimeRef.current = audioCtxRef.current.currentTime;
+    }
+  }, []);
+
+  const playAudioChunk = useCallback((audioData: ArrayBuffer) => {
+    initAudioCtx();
+    const audioCtx = audioCtxRef.current!;
+
+    if (audioCtx.state === "suspended") {
+      audioCtx.resume();
     }
 
-    let active = true;
+    setIsPlaying(true);
 
-    const connectWs = async () => {
+    if (nextStartTimeRef.current < audioCtx.currentTime) {
+      nextStartTimeRef.current = audioCtx.currentTime;
+    }
+
+    const aligned = new ArrayBuffer(audioData.byteLength);
+    new Uint8Array(aligned).set(new Uint8Array(audioData));
+    const floats = new Float32Array(aligned);
+
+    const buf = audioCtx.createBuffer(1, floats.length, SAMPLE_RATE);
+    buf.getChannelData(0).set(floats);
+
+    const source = audioCtx.createBufferSource();
+    source.buffer = buf;
+    source.connect(audioCtx.destination);
+
+    const startTime = Math.max(nextStartTimeRef.current, audioCtx.currentTime);
+    source.start(startTime);
+    nextStartTimeRef.current = startTime + buf.duration;
+
+    // Clear isPlaying after audio finishes
+    setTimeout(() => {
+      if (audioCtx.currentTime >= nextStartTimeRef.current - 0.1) {
+        setIsPlaying(false);
+      }
+    }, Math.max(0, nextStartTimeRef.current - audioCtx.currentTime) * 1000);
+  }, [initAudioCtx]);
+
+  // ── Connect to WS server ──
+  useEffect(() => {
+    let ws: WebSocket | null = null;
+    let didCancel = false;
+    const connectionId = ++connectionSeqRef.current;
+
+    const isCurrentConnection = () => (
+      !didCancel &&
+      connectionSeqRef.current === connectionId &&
+      wsRef.current === ws
+    );
+
+    async function connectWS() {
       try {
-        const res = await fetch(`/api/ws/ticket?meetingId=${meetingId}`);
-        if (!res.ok) throw new Error("Failed to get ticket");
-        const { ticketId } = await res.json();
+        // Get a one-time ticket
+        const { data } = await axios.get(`/api/ws/ticket?meetingId=${meetingId}`);
+        const ticketId = data.ticketId;
 
-        if (!active) return;
+        const wsBaseUrl = process.env.NEXT_PUBLIC_WS_SERVER_URL!;
+        const wsUrl = `${wsBaseUrl}?ticket=${ticketId}&meetingId=${meetingId}`;
 
-        const wsUrl = process.env.NEXT_PUBLIC_WS_SERVER_URL;
-        if (!wsUrl?.trim()) throw new Error("NEXT_PUBLIC_WS_SERVER_URL is not defined in .env");
+        if (didCancel || connectionSeqRef.current !== connectionId) {
+          return;
+        }
 
-        const ws = new WebSocket(`${wsUrl}?meetingId=${meetingId}&ticket=${ticketId}`);
+        ws = new WebSocket(wsUrl);
+        ws.binaryType = 'arraybuffer';
         wsRef.current = ws;
 
         ws.onopen = () => {
-          if (active) setWsStatus("connected");
+          if (!isCurrentConnection()) {
+            ws?.close();
+            return;
+          }
+
+          console.log('WebSocket connected');
+          setIsConnected(true);
+          // The server will auto-send an introductory AI message
+          setAiStatus('speaking');
+          setMessages(prev => [...prev, { role: 'ai', content: '' }]);
+          isReceivingRef.current = true;
         };
 
         ws.onmessage = (event) => {
-          // Handle incoming messages (e.g., transcripts or AI speech) here
-          console.log("WS Message:", event.data);
-        };
+          if (!isCurrentConnection()) return;
 
-        ws.onerror = (error) => {
-          console.error("WebSocket error:", error);
-          if (active) setWsStatus("disconnected");
+          // Binary message = TTS audio chunk
+          if (event.data instanceof ArrayBuffer) {
+            playAudioChunk(event.data);
+            return;
+          }
+
+          // Text message = JSON payload
+          try {
+            const msg = JSON.parse(event.data);
+
+            if (msg.type === 'text') {
+              // Append token to the last AI message
+              setMessages(prev => {
+                if (prev.length === 0) return prev;
+                const newMessages = [...prev];
+                const lastMessage = newMessages[newMessages.length - 1];
+                if (lastMessage && lastMessage.role === 'ai') {
+                  lastMessage.content += msg.data;
+                }
+                return newMessages;
+              });
+            } else if (msg.type === 'done') {
+              setAiStatus('idle');
+              isReceivingRef.current = false;
+            }
+          } catch (err) {
+            console.error('Failed to parse WS message:', err);
+          }
         };
 
         ws.onclose = () => {
-          console.log("WebSocket closed");
-          if (active) setWsStatus("disconnected");
+          if (!isCurrentConnection()) return;
+
+          console.log('WebSocket disconnected');
+          setIsConnected(false);
+          setAiStatus('idle');
+        };
+
+        ws.onerror = (err) => {
+          if (!isCurrentConnection()) return;
+          console.error('WebSocket error:', err);
         };
       } catch (err) {
-        console.error("Error creating WS connection:", err);
-        if (active) setWsStatus("disconnected");
+        if (didCancel || connectionSeqRef.current !== connectionId) return;
+        console.error('Failed to connect to WS server:', err);
       }
-    };
+    }
 
-    connectWs();
+    connectWS();
 
     return () => {
-      active = false;
-      if (wsRef.current) {
-        wsRef.current.close();
+      didCancel = true;
+      if (connectionSeqRef.current === connectionId) {
+        connectionSeqRef.current += 1;
+      }
+      if (ws) {
+        ws.close();
+        if (wsRef.current === ws) {
+          wsRef.current = null;
+        }
+      }
+      if (audioCtxRef.current) {
+        void audioCtxRef.current.close().catch(() => undefined);
+        audioCtxRef.current = null;
       }
     };
-  }, [meetingId]);
+  }, [meetingId, playAudioChunk]);
+
+  // ── Send user message via WebSocket ──
+  const handleSend = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!input.trim() || aiStatus !== 'idle' || !wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
+
+    const userMessage = input;
+    setInput('');
+    setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+    setAiStatus('thinking');
+
+    // Add a placeholder for the AI response
+    setMessages(prev => [...prev, { role: 'ai', content: '' }]);
+    isReceivingRef.current = true;
+
+    // Send message to WS server
+    wsRef.current.send(userMessage);
+
+    // The response will come back via ws.onmessage
+    setAiStatus('speaking');
+  };
 
   const onEndInterview = async () => {
     console.log("End initiated");
     if (wsRef.current) {
       wsRef.current.close();
+      wsRef.current = null;
+    }
+    if (audioCtxRef.current) {
+      await audioCtxRef.current.close().catch(() => undefined);
+      audioCtxRef.current = null;
     }
     router.push("/meetings");
     console.log("Ended");
@@ -94,12 +243,12 @@ export default function InterviewPage({ params }: { params: Promise<{ id: string
       <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between p-6 pl-8">
         <div className="flex items-center gap-3">
           <Badge variant="outline" className="gap-1.5 bg-background/50 backdrop-blur-md border-border text-muted-foreground">
-            <div className={`h-2 w-2 rounded-full ${wsStatus === 'connected' ? 'bg-green-500 animate-pulse' : wsStatus === 'connecting' ? 'bg-yellow-500 animate-pulse' : 'bg-red-500'}`} />
-            {wsStatus === 'connected' ? 'Online' : wsStatus === 'connecting' ? 'Connecting...' : 'Offline'}
+            <div className={`h-2 w-2 rounded-full ${aiStatus === 'speaking' || aiStatus === 'thinking' ? 'bg-green-500 animate-pulse' : isConnected ? 'bg-green-500' : 'bg-yellow-500'}`} />
+            {aiStatus === 'speaking' ? 'Speaking...' : aiStatus === 'thinking' ? 'Thinking...' : isConnected ? 'Online' : 'Connecting...'}
           </Badge>
           <Badge variant="outline" className="gap-1.5 bg-background/50 backdrop-blur-md border-border text-muted-foreground">
             <Wifi className="h-3.5 w-3.5" />
-            Stable
+            {isConnected ? 'Stable' : 'Connecting'}
           </Badge>
         </div>
       </div>
@@ -111,7 +260,7 @@ export default function InterviewPage({ params }: { params: Promise<{ id: string
         {!isCaptionOn ? (
           /* Default State: Large Central Video Cards */
           <div className="grid grid-cols-2 gap-6 w-full max-w-6xl aspect-video max-h-[70vh]">
-            <InterviewCard type="ai" isSpeaking={true} />
+            <InterviewCard type="ai" isSpeaking={isPlaying} />
             <InterviewCard type="user" isSpeaking={isMicOn} />
           </div>
         ) : (
@@ -121,49 +270,67 @@ export default function InterviewPage({ params }: { params: Promise<{ id: string
             {/* Left: Chat/Transcript Area */}
             <div className="flex-1 rounded-3xl border border-border bg-card p-6 flex flex-col relative overflow-hidden backdrop-blur-sm">
 
-              {/* Mock Transcript */}
-              <div className="flex-1 overflow-y-auto space-y-6 pr-4 mask-image-b">
-                <div className="flex gap-4">
-                  <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 border border-primary/30">
-                    <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 border border-primary/30">
+              <div className="flex-1 overflow-y-auto space-y-6 pr-4 pb-4 mask-image-b">
+                {messages.map((msg, idx) => (
+                  <div key={idx} className="flex gap-4">
+                    {msg.role === 'ai' ? (
+                      <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 border border-primary/30">
+                        <span className="text-xs font-bold text-primary">AI</span>
+                      </div>
+                    ) : (
+                      <div className="h-8 w-8 rounded-full bg-secondary flex items-center justify-center flex-shrink-0 border border-border">
+                        <span className="text-xs font-bold text-secondary-foreground">ME</span>
+                      </div>
+                    )}
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium text-primary">
+                        {msg.role === 'ai' ? 'AI Interviewer' : 'You'}
+                      </p>
+                      <p className="text-muted-foreground leading-relaxed text-lg whitespace-pre-wrap">{msg.content}</p>
+                    </div>
+                  </div>
+                ))}
+
+                {aiStatus === 'thinking' && (
+                  <div className="flex gap-4 opacity-50">
+                    <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
                       <span className="text-xs font-bold text-primary">AI</span>
                     </div>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium text-primary">AI Interviewer</p>
-                    <p className="text-muted-foreground leading-relaxed text-lg">Hello! Thanks for joining. To start, could you tell me about a challenging project you worked on recently?</p>
-                  </div>
-                </div>
-
-                <div className="flex gap-4">
-                  <div className="h-8 w-8 rounded-full bg-secondary flex items-center justify-center flex-shrink-0 border border-border">
-                    <span className="text-xs font-bold text-secondary-foreground">ME</span>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium text-secondary-foreground">You</p>
-                    <p className="text-muted-foreground leading-relaxed text-lg">Sure. I recently led the migration of a legacy monolithic application to a microservices architecture. The main challenge was...</p>
-                  </div>
-                </div>
-
-                {/* Live typing indicator */}
-                <div className="flex gap-4 opacity-50">
-                  <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
-                    <span className="text-xs font-bold text-primary">AI</span>
-                  </div>
-                  <div className="space-y-1 pt-2">
-                    <div className="flex gap-1">
-                      <div className="h-1.5 w-1.5 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: '0ms' }} />
-                      <div className="h-1.5 w-1.5 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: '150ms' }} />
-                      <div className="h-1.5 w-1.5 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: '300ms' }} />
+                    <div className="space-y-1 pt-2">
+                      <div className="flex gap-1">
+                        <div className="h-1.5 w-1.5 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: '0ms' }} />
+                        <div className="h-1.5 w-1.5 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: '150ms' }} />
+                        <div className="h-1.5 w-1.5 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: '300ms' }} />
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
               </div>
+
+              {/* Chat Input Form */}
+              <form onSubmit={handleSend} className="mt-4 flex gap-3 pt-2 items-center">
+                <input
+                  type="text"
+                  value={input}
+                  onChange={e => setInput(e.target.value)}
+                  placeholder="Type your response..."
+                  className="flex-1 bg-background border border-border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  disabled={aiStatus !== 'idle'}
+                />
+                <button
+                  type="submit"
+                  disabled={!input.trim() || aiStatus !== 'idle'}
+                  className="bg-primary text-primary-foreground h-12 w-12 rounded-xl flex items-center justify-center disabled:opacity-50 transition-opacity"
+                >
+                  <Send className="h-5 w-5" />
+                </button>
+              </form>
+
             </div>
 
             {/* Right: Stacked Videos */}
             <div className="w-80 flex flex-col gap-4">
-              <InterviewCard type="ai" isSpeaking={true} className="flex-1" />
+              <InterviewCard type="ai" isSpeaking={isPlaying} className="flex-1" />
               <InterviewCard type="user" isSpeaking={isMicOn} className="flex-1" />
             </div>
           </div>
