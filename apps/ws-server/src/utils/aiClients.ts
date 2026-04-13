@@ -1,5 +1,7 @@
-import { GoogleGenAI } from "@google/genai";
+import OpenAI from "openai";
 import { config } from "../ws-env.config";
 
-
-export const gemini = new GoogleGenAI({ apiKey: config.geminiApiKey });
+export const llm = new OpenAI({
+  apiKey: config.llmApiKey,
+  baseURL: config.llmBaseUrl,
+});

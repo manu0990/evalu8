@@ -1,18 +1,21 @@
-import { Content } from "@google/genai";
+export type ConversationMessage = {
+  role: "user" | "assistant";
+  content: string;
+};
 
 export class Conversation {
-  messages: Content[];
+  private messages: ConversationMessage[];
 
   constructor() {
     this.messages = [];
   }
 
   addUserMessage(content: string) {
-    this.messages.push({ role: "user", parts: [{ text: content }] });
+    this.messages.push({ role: "user", content });
   }
 
   addAssistantMessage(content: string) {
-    this.messages.push({ role: "model", parts: [{ text: content }] });
+    this.messages.push({ role: "assistant", content });
   }
 
   getHistory() {
