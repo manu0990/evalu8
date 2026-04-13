@@ -16,8 +16,14 @@
     "AWS_S3_BUCKET_NAME",
     "AWS_ACCESS_KEY_ID",
     "AWS_SECRET_ACCESS_KEY",
-    "GEMINI_API_KEY",
-    "LLM_MODEL"
+    "WEB_LLM_API_KEY",
+    "WEB_LLM_MODEL",
+    "WS_LLM_API_KEY",
+    "WS_LLM_BASE_URL",
+    "WS_LLM_MODEL",
+    "WS_LLM_TEMPERATURE",
+    "WS_LLM_MAX_TOKENS",
+    "CARTESIA_API_KEY"
   ],
   "tasks": {
     "build": {
@@ -46,8 +52,14 @@
         "AWS_S3_BUCKET_NAME",
         "AWS_ACCESS_KEY_ID",
         "AWS_SECRET_ACCESS_KEY",
-        "GEMINI_API_KEY",
-        "LLM_MODEL"
+        "WEB_LLM_API_KEY",
+        "WEB_LLM_MODEL",
+        "WS_LLM_API_KEY",
+        "WS_LLM_BASE_URL",
+        "WS_LLM_MODEL",
+        "WS_LLM_TEMPERATURE",
+        "WS_LLM_MAX_TOKENS",
+        "CARTESIA_API_KEY"
       ]
     },
     "lint": {
@@ -67,8 +79,14 @@
         "AWS_S3_BUCKET_NAME",
         "AWS_ACCESS_KEY_ID",
         "AWS_SECRET_ACCESS_KEY",
-        "GEMINI_API_KEY",
-        "LLM_MODEL"
+        "WEB_LLM_API_KEY",
+        "WEB_LLM_MODEL",
+        "WS_LLM_API_KEY",
+        "WS_LLM_BASE_URL",
+        "WS_LLM_MODEL",
+        "WS_LLM_TEMPERATURE",
+        "WS_LLM_MAX_TOKENS",
+        "CARTESIA_API_KEY"
       ]
     },
     "check-types": {
@@ -88,8 +106,14 @@
         "AWS_S3_BUCKET_NAME",
         "AWS_ACCESS_KEY_ID",
         "AWS_SECRET_ACCESS_KEY",
-        "GEMINI_API_KEY",
-        "LLM_MODEL"
+        "WEB_LLM_API_KEY",
+        "WEB_LLM_MODEL",
+        "WS_LLM_API_KEY",
+        "WS_LLM_BASE_URL",
+        "WS_LLM_MODEL",
+        "WS_LLM_TEMPERATURE",
+        "WS_LLM_MAX_TOKENS",
+        "CARTESIA_API_KEY"
       ]
     },
     "dev": {
@@ -108,8 +132,14 @@
         "AWS_S3_BUCKET_NAME",
         "AWS_ACCESS_KEY_ID",
         "AWS_SECRET_ACCESS_KEY",
-        "GEMINI_API_KEY",
-        "LLM_MODEL"
+        "WEB_LLM_API_KEY",
+        "WEB_LLM_MODEL",
+        "WS_LLM_API_KEY",
+        "WS_LLM_BASE_URL",
+        "WS_LLM_MODEL",
+        "WS_LLM_TEMPERATURE",
+        "WS_LLM_MAX_TOKENS",
+        "CARTESIA_API_KEY"
       ]
     }
   }

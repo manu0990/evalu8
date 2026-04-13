@@ -6,7 +6,7 @@ services:
       POSTGRES_USER: evalu8_user
       POSTGRES_PASSWORD: evalu8_password
       POSTGRES_DB: evalu8_db
-    ports: 
+    ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -21,7 +21,7 @@ services:
     build:
       context: .
       dockerfile: ./docker/Dockerfile.dev
-    container_name: evalu8_web  
+    container_name: evalu8_web
     ports:
       - "3000:3000"
     # Required on some hosts to resolve public AWS endpoints
@@ -39,12 +39,14 @@ services:
       - GOOGLE_CLIENT_SECRET=example-google-client-secret
       - GITHUB_CLIENT_ID=example-github-client-id
       - GITHUB_CLIENT_SECRET=example-github-client-secret
-      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - WEB_LLM_API_KEY=${WEB_LLM_API_KEY}
+      - WEB_LLM_MODEL=${WEB_LLM_MODEL}
       - AWS_REGION=${AWS_REGION}
       - AWS_S3_BUCKET_NAME=${AWS_S3_BUCKET_NAME}
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
       - NEXT_PUBLIC_WS_SERVER_URL=${NEXT_PUBLIC_WS_SERVER_URL}
+      - CARTESIA_API_KEY=${CARTESIA_API_KEY}
     volumes:
       - .:/app
       - /app/node_modules
@@ -68,8 +70,12 @@ services:
       - CHOKIDAR_USEPOLLING=true
       - DATABASE_URL=postgresql://evalu8_user:evalu8_password@postgres:5432/evalu8_db
       - WS_PORT=${WS_PORT:-8080}
-      - GEMINI_API_KEY=${GEMINI_API_KEY}
-      - LLM_MODEL=${LLM_MODEL}
+      - WS_LLM_API_KEY=${WS_LLM_API_KEY}
+      - WS_LLM_BASE_URL=${WS_LLM_BASE_URL}
+      - WS_LLM_MODEL=${WS_LLM_MODEL}
+      - WS_LLM_TEMPERATURE=${WS_LLM_TEMPERATURE}
+      - WS_LLM_MAX_TOKENS=${WS_LLM_MAX_TOKENS}
+      - CARTESIA_API_KEY=${CARTESIA_API_KEY}
     volumes:
       - .:/app
       - /app/node_modules
