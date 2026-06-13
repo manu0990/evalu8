@@ -1,7 +1,7 @@
 'use client';
 
 import { use, useState, useEffect, useRef, useCallback } from 'react';
-import { Wifi, Send } from 'lucide-react';
+import { Wifi } from 'lucide-react';
 import { Badge } from '@repo/ui';
 import { InterviewCard } from '@/components/interview/InterviewCard';
 import { ControllerDock } from '@/components/interview/ControllerDock';
@@ -24,7 +24,7 @@ export default function InterviewPage({ params }: { params: Promise<{ id: string
   const [selectedSpeaker, setSelectedSpeaker] = useState("Default Speaker");
 
   const [aiStatus, setAiStatus] = useState<"idle" | "thinking" | "speaking">("idle");
-  const [input, setInput] = useState("");
+
   const [messages, setMessages] = useState<{ role: 'user' | 'ai', content: string }[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -214,26 +214,7 @@ export default function InterviewPage({ params }: { params: Promise<{ id: string
     };
   }, [meetingId, playAudioChunk]);
 
-  // ── Send user message via WebSocket ──
-  const handleSend = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input.trim() || aiStatus !== 'idle' || !wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
 
-    const userMessage = input;
-    setInput('');
-    setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
-    setAiStatus('thinking');
-
-    // Add a placeholder for the AI response
-    setMessages(prev => [...prev, { role: 'ai', content: '' }]);
-    isReceivingRef.current = true;
-
-    // Send message to WS server
-    wsRef.current.send(userMessage);
-
-    // The response will come back via ws.onmessage
-    setAiStatus('speaking');
-  };
 
   const onEndInterview = async () => {
     console.log("End initiated");
@@ -320,24 +301,7 @@ export default function InterviewPage({ params }: { params: Promise<{ id: string
                 )}
               </div>
 
-              {/* Chat Input Form */}
-              <form onSubmit={handleSend} className="mt-4 flex gap-3 pt-2 items-center">
-                <input
-                  type="text"
-                  value={input}
-                  onChange={e => setInput(e.target.value)}
-                  placeholder="Type your response..."
-                  className="flex-1 bg-background border border-border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/50"
-                  disabled={aiStatus !== 'idle'}
-                />
-                <button
-                  type="submit"
-                  disabled={!input.trim() || aiStatus !== 'idle'}
-                  className="bg-primary text-primary-foreground h-12 w-12 rounded-xl flex items-center justify-center disabled:opacity-50 transition-opacity"
-                >
-                  <Send className="h-5 w-5" />
-                </button>
-              </form>
+
 
             </div>
 
