@@ -6,6 +6,8 @@ import { Badge } from '@repo/ui';
 import { InterviewCard } from '@/components/interview/InterviewCard';
 import { ControllerDock } from '@/components/interview/ControllerDock';
 import { useRouter } from 'next/navigation';
+import { useMicrophone } from '@/hooks/useMicrophone';
+
 import axios from 'axios';
 
 const SAMPLE_RATE = 44100;
@@ -28,6 +30,7 @@ export default function InterviewPage({ params }: { params: Promise<{ id: string
   const [messages, setMessages] = useState<{ role: 'user' | 'ai', content: string }[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [liveTranscript, setLiveTranscript] = useState('');
 
   const wsRef = useRef<WebSocket | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -37,6 +40,9 @@ export default function InterviewPage({ params }: { params: Promise<{ id: string
   const connectionSeqRef = useRef(0);
 
   const router = useRouter();
+
+  // ── Microphone capture: sends binary audio chunks to WS ──
+  const { stream } = useMicrophone(wsRef.current, isMicOn && isConnected);
 
   // ── Audio playback for binary TTS chunks from WS server ──
   const initAudioCtx = useCallback(() => {
@@ -55,6 +61,8 @@ export default function InterviewPage({ params }: { params: Promise<{ id: string
       gainNodeRef.current = gainNode;
     }
   }, []);
+
+  const playbackTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const playAudioChunk = useCallback((audioData: ArrayBuffer) => {
     initAudioCtx();
@@ -85,10 +93,14 @@ export default function InterviewPage({ params }: { params: Promise<{ id: string
     source.start(startTime);
     nextStartTimeRef.current = startTime + buf.duration;
 
-    // Clear isPlaying after audio finishes
-    setTimeout(() => {
+    // Clear isPlaying and notify backend after audio finishes
+    if (playbackTimeoutRef.current) clearTimeout(playbackTimeoutRef.current);
+    playbackTimeoutRef.current = setTimeout(() => {
       if (audioCtx.currentTime >= nextStartTimeRef.current - 0.1) {
         setIsPlaying(false);
+        if (wsRef.current?.readyState === WebSocket.OPEN) {
+          wsRef.current.send(JSON.stringify({ type: "playback_finished" }));
+        }
       }
     }, Math.max(0, nextStartTimeRef.current - audioCtx.currentTime) * 1000);
   }, [initAudioCtx]);
@@ -157,19 +169,36 @@ export default function InterviewPage({ params }: { params: Promise<{ id: string
             const msg = JSON.parse(event.data);
 
             if (msg.type === 'text') {
+              // If this is the first token of a new AI response, start a new message
+              if (!isReceivingRef.current) {
+                setMessages(prev => [...prev, { role: 'ai', content: '' }]);
+                isReceivingRef.current = true;
+                setAiStatus('speaking');
+                setLiveTranscript('');
+              }
               // Append token to the last AI message
               setMessages(prev => {
                 if (prev.length === 0) return prev;
                 const newMessages = [...prev];
-                const lastMessage = newMessages[newMessages.length - 1];
+                const lastIdx = newMessages.length - 1;
+                const lastMessage = newMessages[lastIdx];
                 if (lastMessage && lastMessage.role === 'ai') {
-                  lastMessage.content += msg.data;
+                  newMessages[lastIdx] = { ...lastMessage, content: lastMessage.content + msg.data };
                 }
                 return newMessages;
               });
             } else if (msg.type === 'done') {
               setAiStatus('idle');
               isReceivingRef.current = false;
+            } else if (msg.type === 'user_message') {
+              // The backend sends the full accumulated user message
+              setMessages(prev => [...prev, { role: 'user', content: msg.data }]);
+              setLiveTranscript('');
+              setAiStatus('thinking');
+            } else if (msg.type === 'stt_status') {
+              if (msg.data === 'error') {
+                console.error('Deepgram STT Error:', msg.error);
+              }
             }
           } catch (err) {
             console.error('Failed to parse WS message:', err);
@@ -179,7 +208,6 @@ export default function InterviewPage({ params }: { params: Promise<{ id: string
         ws.onclose = () => {
           if (!isCurrentConnection()) return;
 
-          console.log('WebSocket disconnected');
           setIsConnected(false);
           setAiStatus('idle');
         };
@@ -217,7 +245,6 @@ export default function InterviewPage({ params }: { params: Promise<{ id: string
 
 
   const onEndInterview = async () => {
-    console.log("End initiated");
     if (wsRef.current) {
       wsRef.current.close();
       wsRef.current = null;
@@ -226,8 +253,8 @@ export default function InterviewPage({ params }: { params: Promise<{ id: string
       await audioCtxRef.current.close().catch(() => undefined);
       audioCtxRef.current = null;
     }
+    stream?.getTracks().forEach(t => t.stop());
     router.push("/meetings");
-    console.log("Ended");
   }
 
   return (
@@ -255,7 +282,7 @@ export default function InterviewPage({ params }: { params: Promise<{ id: string
           /* Default State: Large Central Video Cards */
           <div className="grid grid-cols-2 gap-6 w-full max-w-6xl aspect-video max-h-[70vh]">
             <InterviewCard type="ai" isSpeaking={isPlaying} />
-            <InterviewCard type="user" isSpeaking={isMicOn} />
+            <InterviewCard type="user" isSpeaking={isMicOn && !isPlaying} stream={stream} />
           </div>
         ) : (
           /* Caption/Chat State: Split View */
@@ -285,6 +312,20 @@ export default function InterviewPage({ params }: { params: Promise<{ id: string
                   </div>
                 ))}
 
+                {liveTranscript && (
+                  <div className="flex gap-4 opacity-60">
+                    <div className="h-8 w-8 rounded-full bg-secondary flex items-center justify-center shrink-0 border border-border">
+                      <span className="text-xs font-bold text-secondary-foreground">ME</span>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium text-muted-foreground">
+                        Listening...
+                      </p>
+                      <p className="text-muted-foreground/70 leading-relaxed text-lg whitespace-pre-wrap italic">{liveTranscript}</p>
+                    </div>
+                  </div>
+                )}
+
                 {aiStatus === 'thinking' && (
                   <div className="flex gap-4 opacity-50">
                     <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
@@ -308,7 +349,7 @@ export default function InterviewPage({ params }: { params: Promise<{ id: string
             {/* Right: Stacked Videos */}
             <div className="w-80 flex flex-col gap-4">
               <InterviewCard type="ai" isSpeaking={isPlaying} className="flex-1" />
-              <InterviewCard type="user" isSpeaking={isMicOn} className="flex-1" />
+              <InterviewCard type="user" isSpeaking={isMicOn && !isPlaying} stream={stream} className="flex-1" />
             </div>
           </div>
         )}

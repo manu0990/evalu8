@@ -26,7 +26,10 @@ export class TTSService {
     this.ws = await cartesiaClient.tts.websocket();
 
     this.ws.on("error", (err) => {
-      console.error("Cartesia WS error:", getErrorMessage(err));
+      const msg = getErrorMessage(err);
+      if (!msg.includes("No valid transcripts passed")) {
+        console.error("Cartesia WS error:", msg);
+      }
     });
   }
 
@@ -41,7 +44,7 @@ export class TTSService {
       model_id: "sonic-3",
       voice: {
         mode: "id",
-        id: "6ccbfb76-1fc6-48f7-b71d-91ac6298247b",
+        id: config.cartesiaVoiceModel,
       },
       output_format: {
         container: "raw",
@@ -54,8 +57,10 @@ export class TTSService {
     this.receiveAudio(this.ctx);
   }
 
+  private receivePromise: Promise<void> = Promise.resolve();
+
   private async receiveAudio(ctx: TTSContext) {
-    (async () => {
+    this.receivePromise = (async () => {
       try {
         for await (const event of ctx.receive()) {
           if (event.type === "chunk" && event.audio) {
@@ -66,7 +71,8 @@ export class TTSService {
         }
       } catch (err) {
         // Context was closed — expected when endResponse() is called
-        if (!getErrorMessage(err).includes("closed")) {
+        const msg = getErrorMessage(err);
+        if (!msg.includes("closed") && !msg.includes("No valid transcripts passed")) {
           console.error("TTS receive error:", err);
         }
       }
@@ -85,8 +91,6 @@ export class TTSService {
         await ctx.push({
           transcript,
         });
-
-        await ctx.flush();
       })
       .catch((err) => {
         console.error("TTS push error:", err);
@@ -98,11 +102,16 @@ export class TTSService {
     if (this.ctx) {
       await this.sendQueue;
 
+      // Signal Cartesia that we are done sending text
       try {
         await this.ctx.no_more_inputs();
       } catch {
-        // Ignore — context may already be closed
+        // Ignored
       }
+
+      // Wait for Cartesia to finish streaming all audio chunks for this context
+      await this.receivePromise;
+
       this.ctx = undefined;
     }
   }

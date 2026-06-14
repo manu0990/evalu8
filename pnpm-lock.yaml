@@ -32,7 +32,7 @@ importers:
         version: 3.1029.0
       '@cartesia/cartesia-js':
         specifier: ^3.0.0
-        version: 3.0.0(ws@8.19.0)
+        version: 3.0.0(ws@8.21.0)
       '@google/generative-ai':
         specifier: ^0.24.1
         version: 0.24.1
@@ -112,6 +112,9 @@ importers:
       '@cartesia/cartesia-js':
         specifier: ^3.0.0
         version: 3.0.0(ws@8.19.0)
+      '@deepgram/sdk':
+        specifier: ^5.4.0
+        version: 5.4.0
       '@repo/db':
         specifier: workspace:*
         version: link:../../packages/db
@@ -507,6 +510,10 @@ packages:
 
   '@chevrotain/utils@10.5.0':
     resolution: {integrity: sha512-hBzuU5+JjB2cqNZyszkDHZgOSrUUT8V3dhgRl8Q9Gp6dAj/H5+KILGjbhDpc3Iy9qmqlm/akuOI2ut9VUtzJxQ==}
+
+  '@deepgram/sdk@5.4.0':
+    resolution: {integrity: sha512-Xm0lB38VcyJgsXbABhhZWKXJN8jnAVk35YP186Qxiqbfz8GP4wgSEugoovWRhdMeKrbRhN7IVrcbHElVTNSHVw==}
+    engines: {node: '>=18.0.0'}
 
   '@electric-sql/pglite-socket@0.0.6':
     resolution: {integrity: sha512-6RjmgzphIHIBA4NrMGJsjNWK4pu+bCWJlEWlwcxFTVY3WT86dFpKwbZaGWZV6C5Rd7sCk1Z0CI76QEfukLAUXw==}
@@ -3790,6 +3797,18 @@ packages:
       utf-8-validate:
         optional: true
 
+  ws@8.21.0:
+    resolution: {integrity: sha512-Vsp28b7DRcimFQvrqu2Wek3z1iYxDCWqHYB8Qsnk/S4RfaCQzPGPyBNuVjJV3cd6UiKtUtp6sNM77gWvzcCH+g==}
+    engines: {node: '>=10.0.0'}
+    peerDependencies:
+      bufferutil: ^4.0.1
+      utf-8-validate: '>=5.0.2'
+    peerDependenciesMeta:
+      bufferutil:
+        optional: true
+      utf-8-validate:
+        optional: true
+
   xtend@4.0.2:
     resolution: {integrity: sha512-LKYU1iAXJXUgAXn9URjiu+MWhyUXHsvfp7mcuYm9dSUKK0/CjtrUwFAxD82/mCWbtLsGjFIad0wIsod4zrTAEQ==}
     engines: {node: '>=0.4'}
@@ -4291,6 +4310,10 @@ snapshots:
     optionalDependencies:
       ws: 8.19.0
 
+  '@cartesia/cartesia-js@3.0.0(ws@8.21.0)':
+    optionalDependencies:
+      ws: 8.21.0
+
   '@chevrotain/cst-dts-gen@10.5.0':
     dependencies:
       '@chevrotain/gast': 10.5.0
@@ -4305,6 +4328,13 @@ snapshots:
   '@chevrotain/types@10.5.0': {}
 
   '@chevrotain/utils@10.5.0': {}
+
+  '@deepgram/sdk@5.4.0':
+    dependencies:
+      ws: 8.21.0
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
 
   '@electric-sql/pglite-socket@0.0.6(@electric-sql/pglite@0.3.2)':
     dependencies:
@@ -7805,6 +7835,8 @@ snapshots:
   word-wrap@1.2.5: {}
 
   ws@8.19.0: {}
+
+  ws@8.21.0: {}
 
   xtend@4.0.2: {}
 

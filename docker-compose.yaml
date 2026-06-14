@@ -25,7 +25,6 @@ services:
     ports:
       - "3000:3000"
     # Required on some hosts to resolve public AWS endpoints
-    # Else might get "Failed to fetch (EAI_AGAIN)" error
     dns:
       - 8.8.8.8
       - 1.1.1.1
@@ -64,7 +63,11 @@ services:
       dockerfile: ./docker/Dockerfile.dev
     container_name: evalu8_ws
     ports:
-      - "8080:8080"
+      - "$WS_PORT:$WS_PORT"
+    # Required to resolve external API endpoints (Deepgram, Cartesia, etc.)
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     environment:
       - NODE_ENV=development
       - CHOKIDAR_USEPOLLING=true
@@ -76,6 +79,9 @@ services:
       - WS_LLM_TEMPERATURE=${WS_LLM_TEMPERATURE}
       - WS_LLM_MAX_TOKENS=${WS_LLM_MAX_TOKENS}
       - CARTESIA_API_KEY=${CARTESIA_API_KEY}
+      - CARTESIA_VOICE_MODEL=${CARTESIA_VOICE_MODEL}
+      - DEEPGRAM_API_KEY=${DEEPGRAM_API_KEY}
+      - DEEPGRAM_STT_MODEL_NAME=${DEEPGRAM_STT_MODEL_NAME}
     volumes:
       - .:/app
       - /app/node_modules

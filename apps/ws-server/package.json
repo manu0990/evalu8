@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@cartesia/cartesia-js": "^3.0.0",
+    "@deepgram/sdk": "^5.4.0",
     "@repo/db": "workspace:*",
     "dotenv": "^17.3.1",
     "openai": "^6.34.0",

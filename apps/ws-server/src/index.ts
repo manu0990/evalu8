@@ -6,6 +6,7 @@ import { streamCompletion } from "./services/llmService";
 import { config } from "./ws-env.config";
 import { prisma } from "@repo/db";
 import { TTSService } from "./services/ttsService";
+import { STTService } from "./services/sttService";
 
 // Extend WebSocket interface to hold user data
 interface AuthenticatedWebSocket extends WebSocket {
@@ -53,11 +54,9 @@ export function startWebSocketServer() {
         return;
       }
 
-      console.log("Deleting ticket");
       // Valid ticket found! Delete it so it can't be reused
       try {
         await prisma.wsTicket.delete({ where: { id: ticketId } });
-        console.log("log deleted");
       } catch (err) {
         const errorCode =
           typeof err === "object" && err !== null && "code" in err ? err.code : undefined;
@@ -72,8 +71,6 @@ export function startWebSocketServer() {
       }
 
       wss.handleUpgrade(request, socket, head, (ws: AuthenticatedWebSocket) => {
-        console.log("Connection being upgraded.");
-
         ws.userId = ticket.userId;
         ws.meetingId = ticket.meetingId;
         wss.emit("connection", ws, request);
@@ -86,7 +83,6 @@ export function startWebSocketServer() {
   });
 
   wss.on("connection", async (socket: AuthenticatedWebSocket) => {
-    console.log(`Client connected for meeting ${socket.meetingId}`);
 
     const conversation = new Conversation();
     const tts = new TTSService(socket);
@@ -96,6 +92,56 @@ export function startWebSocketServer() {
         console.error("Failed to initialize TTS:", err);
         return false;
       });
+
+    // ── Accumulate final transcript segments until speech_final ──
+    let pendingTranscript = "";
+    let isAiSpeaking = false;
+
+    const stt = new STTService({
+      onTranscript: ({ transcript, isFinal, speechFinal }) => {
+        // If the AI is currently speaking, enforce strict turn-taking by ignoring user input
+        if (isAiSpeaking) return;
+
+        // We now wait for the turn to complete before updating the UI
+
+        // Accumulate final segments
+        if (isFinal && transcript.trim()) {
+          pendingTranscript += (pendingTranscript ? " " : "") + transcript.trim();
+        }
+
+        // When the speaker pauses (speech_final), send accumulated text to LLM
+        if (speechFinal && pendingTranscript.trim() && !isAiSpeaking) {
+          const userMessage = pendingTranscript.trim();
+          pendingTranscript = "";
+
+          if (socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify({ type: "user_message", data: userMessage }));
+          }
+
+          conversation.addUserMessage(userMessage);
+          isAiSpeaking = true;
+          // The stream ends quickly because Cartesia generates audio faster than real-time.
+          // We rely on the frontend's 'playback_finished' event to toggle isAiSpeaking to false.
+          streamAIResponse().catch((err) => console.error("Stream error after STT:", err));
+        }
+      },
+    });
+
+    let isSttReady = false;
+    const pendingAudioQueue: Buffer[] = [];
+    
+      stt.init()
+        .then(() => {
+          isSttReady = true;
+        // Flush the queue immediately in order
+        while (pendingAudioQueue.length > 0) {
+          const chunk = pendingAudioQueue.shift();
+          if (chunk) stt.sendAudio(chunk);
+        }
+      })
+        .catch((err) => {
+          console.error("[STT] Failed to initialize:", err);
+        });
 
     // ── Fetch meeting context from DB ──
     let systemInstruction = "You are a helpful assistant conducting an interview.";
@@ -111,7 +157,7 @@ export function startWebSocketServer() {
 
       if (meeting) {
         systemInstruction = [
-          `You are a professional, friendly AI interviewer conducting a mock interview.`,
+          `You are Evalu8, a professional and friendly AI interviewer conducting a mock interview.`,
           ``,
           `## Interview Context`,
           `- **Company**: ${meeting.companyName}${meeting.companyWebsite ? ` (${meeting.companyWebsite})` : ""}`,
@@ -223,25 +269,47 @@ export function startWebSocketServer() {
         "The interview is starting now. Please greet the candidate and begin with your opening question."
       );
 
+      isAiSpeaking = true;
+      // We start the greeting but don't reset isAiSpeaking immediately.
+      // The frontend will send 'playback_finished' when the audio completes.
       await streamAIResponse();
     } catch (err) {
       console.error("Failed to send intro greeting:", err);
+      isAiSpeaking = false;
     }
 
-    // ── Handle subsequent user messages ──
-    socket.on("message", async (data) => {
-      const userMessage = data.toString();
+    // ── Handle subsequent messages ──
+    socket.on("message", async (data, isBinary) => {
+      if (isBinary) {
+        // Binary frame = audio chunk from microphone → forward to Deepgram
+        if (isSttReady) {
+          stt.sendAudio(data as Buffer);
+        } else {
+          pendingAudioQueue.push(data as Buffer);
+        }
+      } else {
+        // Text frame = control messages from client
+        try {
+          const msg = JSON.parse(data.toString());
 
-      conversation.addUserMessage(userMessage);
-
-      try {
-        await streamAIResponse();
-      } catch (err) {
-        console.error("Stream error:", err);
+          if (msg.type === "playback_finished") {
+            // The frontend finished playing the AI's audio chunks. Turn-taking resumes.
+            isAiSpeaking = false;
+          } else if (msg.type === "user_message") {
+            // Fallback text input (if ever needed)
+            conversation.addUserMessage(msg.data);
+            await streamAIResponse();
+          }
+        } catch (err) {
+          console.error("Failed to parse control message:", err);
+        }
       }
     });
 
     socket.on("close", async () => {
+      if (isSttReady) {
+        stt.close();
+      }
       if (await ttsReady) {
         await tts.close();
       }

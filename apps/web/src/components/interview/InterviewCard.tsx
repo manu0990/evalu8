@@ -1,15 +1,17 @@
 import { cn } from "@repo/ui/lib/utils";
 import { Zap } from "lucide-react";
 import Image from "next/image";
+import { VoiceVisualizer } from "./MicVisualizer";
 
 interface InterviewCardProps {
   type: 'user' | 'ai';
   imageSrc?: string;
   isSpeaking?: boolean;
   className?: string;
+  stream?: MediaStream | null;
 }
 
-export function InterviewCard({ type, imageSrc, isSpeaking = false, className }: InterviewCardProps) {
+export function InterviewCard({ type, imageSrc, isSpeaking = false, className, stream }: InterviewCardProps) {
   const isAI = type === 'ai';
   const label = isAI ? "Evalu8" : "You";
 
@@ -39,15 +41,20 @@ export function InterviewCard({ type, imageSrc, isSpeaking = false, className }:
           isAI ? (
             <Zap className="h-16 w-16 text-primary animate-pulse" />
           ) : (
-            <div className="text-sm text-muted-foreground">User</div>
+            stream ? (
+              <div className="text-sm text-muted-foreground">User</div>
+            ) : (
+              <div className="text-sm text-muted-foreground">User</div>
+            )
           )
         )}
       </div>
 
-      {/* Bottom Left Label */}
+      {/* Bottom Left Label with Visualizer */}
       <div className="absolute bottom-4 left-4 z-20">
-        <div className="rounded-lg border border-border/10 bg-background/80 px-3 py-1.5 backdrop-blur-md">
+        <div className="flex items-center gap-2 rounded-lg border border-border/10 bg-background/80 px-3 py-1.5 backdrop-blur-md">
           <span className="text-xs font-medium text-foreground">{label}</span>
+          <VoiceVisualizer isSpeaking={isSpeaking} stream={stream} />
         </div>
       </div>
     </div>
