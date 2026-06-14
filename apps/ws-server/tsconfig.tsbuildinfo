@@ -1,14 +1,1 @@
-{
-  "root": [
-    "./src/index.ts",
-    "./src/server.ts",
-    "./src/ws-env.config.ts",
-    "./src/lib/system-prompt.ts",
-    "./src/services/conversationService.ts",
-    "./src/services/llmService.ts",
-    "./src/services/sttService.ts",
-    "./src/services/ttsService.ts",
-    "./src/utils/aiClients.ts"
-  ],
-  "version": "5.8.3"
-}
+{"root":["./src/index.ts","./src/server.ts","./src/ws-env.config.ts","./src/lib/system-prompt.ts","./src/services/conversationService.ts","./src/services/llmService.ts","./src/services/sttService.ts","./src/services/ttsService.ts","./src/utils/aiClients.ts"],"errors":true,"version":"5.8.3"}

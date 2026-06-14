@@ -3,8 +3,7 @@
   "compilerOptions": {
     "outDir": "./dist",
     "rootDir": "./src",
-    "module": "es6",
-    "moduleResolution": "bundler",
-    "esModuleInterop": true
+    "module": "ESNext",
+    "moduleResolution": "Bundler"
   }
 }
