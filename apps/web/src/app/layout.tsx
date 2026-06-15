@@ -46,9 +46,8 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: "evalu8",
-  description:
-    "evalu8 is a modern web application that helps you to evaluate users' interview cracking capability by taking a moch interview with AI",
+  title: "Evalu8",
+  description: "Evalu8 is a modern web application that helps you to evaluate users' interview cracking capability by taking a moch interview with AI",
 };
 
 export default function RootLayout({

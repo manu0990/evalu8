@@ -15,14 +15,16 @@ const Hero = () => {
         
         {/* Main CTAs */}
         <div className="flex flex-col sm:flex-row justify-center items-center gap-4 mb-8">
-          <Link href="/auth/signin">
+          <Link href="/auth/signup">
             <Button size="lg" className="bg-white text-black hover:bg-gray-200 rounded-full px-8 w-full sm:w-auto cursor-pointer">
               Start For Free
             </Button>
           </Link>
-          <Button variant="outline" size="lg" className="rounded-full px-8 w-full sm:w-auto cursor-pointer">
-            Watch Demo
-          </Button>
+          <Link href="#demo">
+            <Button variant="outline" size="lg" className="rounded-full px-8 w-full sm:w-auto cursor-pointer">
+              Watch Demo
+            </Button>
+          </Link>
         </div>
 
         {/* Feature badges */}

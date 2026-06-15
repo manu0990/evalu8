@@ -4,6 +4,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { Home, Calendar, BarChart3, Settings, HelpCircle, User, ChevronDown, Monitor, Sparkles, LogOut, FileText } from "lucide-react";
 import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
+import { signOut } from "next-auth/react";
 import { useState, useEffect, useRef } from 'react';
 
 interface AppSidebarProps {
@@ -208,7 +209,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
 
                 <DropdownMenuSeparator />
 
-                <DropdownMenuItem className="text-destructive">
+                <DropdownMenuItem className="text-destructive cursor-pointer" onClick={() => signOut({ callbackUrl: '/' })}>
                   <LogOut className="h-4 w-4 mr-2" /> Sign out
                 </DropdownMenuItem>
               </DropdownMenuContent>
