@@ -28,6 +28,11 @@ import {
 } from '@repo/ui';
 import { Dispatch, SetStateAction } from 'react';
 
+export interface MediaDeviceItem {
+  id: string;
+  label: string;
+}
+
 interface InterviewDockProps {
   isMicOn: boolean;
   setIsMicOn: Dispatch<SetStateAction<boolean>>;
@@ -39,8 +44,8 @@ interface InterviewDockProps {
   setSelectedMic: Dispatch<SetStateAction<string>>;
   selectedSpeaker: string;
   setSelectedSpeaker: Dispatch<SetStateAction<string>>;
-  mics?: string[];
-  speakers?: string[];
+  mics?: MediaDeviceItem[];
+  speakers?: MediaDeviceItem[];
   onTakeBreak?: () => void;
   onEndInterview?: () => void;
 }
@@ -56,8 +61,8 @@ export function ControllerDock({
   setSelectedMic,
   selectedSpeaker,
   setSelectedSpeaker,
-  mics = ["Default Microphone", "MacBook Pro Microphone", "AirPods Pro"],
-  speakers = ["Default Speaker", "MacBook Pro Speakers", "AirPods Pro"],
+  mics = [],
+  speakers = [],
   onTakeBreak,
   onEndInterview
 }: InterviewDockProps) {
@@ -174,8 +179,8 @@ export function ControllerDock({
               <DropdownMenuSubContent className="bg-popover border-border text-popover-foreground">
                 <DropdownMenuRadioGroup value={selectedMic} onValueChange={setSelectedMic}>
                   {mics.map(mic => (
-                    <DropdownMenuRadioItem key={mic} value={mic} className="cursor-pointer focus:bg-accent focus:text-accent-foreground">
-                      {mic}
+                    <DropdownMenuRadioItem key={mic.id} value={mic.id} className="cursor-pointer focus:bg-accent focus:text-accent-foreground">
+                      {mic.label}
                     </DropdownMenuRadioItem>
                   ))}
                 </DropdownMenuRadioGroup>
@@ -189,8 +194,8 @@ export function ControllerDock({
               <DropdownMenuSubContent className="bg-popover border-border text-popover-foreground">
                 <DropdownMenuRadioGroup value={selectedSpeaker} onValueChange={setSelectedSpeaker}>
                   {speakers.map(spk => (
-                    <DropdownMenuRadioItem key={spk} value={spk} className="cursor-pointer focus:bg-accent focus:text-accent-foreground">
-                      {spk}
+                    <DropdownMenuRadioItem key={spk.id} value={spk.id} className="cursor-pointer focus:bg-accent focus:text-accent-foreground">
+                      {spk.label}
                     </DropdownMenuRadioItem>
                   ))}
                 </DropdownMenuRadioGroup>

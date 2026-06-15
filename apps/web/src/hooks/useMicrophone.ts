@@ -18,7 +18,8 @@ export interface UseMicrophoneResult {
  */
 export function useMicrophone(
   ws: WebSocket | null,
-  enabled: boolean
+  enabled: boolean,
+  deviceId?: string
 ): UseMicrophoneResult {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -54,7 +55,7 @@ export function useMicrophone(
     async function startRecording() {
       try {
         const mediaStream = await navigator.mediaDevices.getUserMedia({
-          audio: true,
+          audio: deviceId ? { deviceId: { exact: deviceId } } : true,
         });
 
         if (cancelled) {
@@ -114,7 +115,7 @@ export function useMicrophone(
       }
       stopRecording();
     };
-  }, [ws, enabled, stopRecording]);
+  }, [ws, enabled, deviceId, stopRecording]);
 
   // Cleanup on unmount
   useEffect(() => {

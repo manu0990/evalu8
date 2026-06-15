@@ -7,6 +7,7 @@ import { use, useState, useEffect, useRef, useCallback } from 'react';
 import { InterviewCard } from '@/components/interview/InterviewCard';
 import { ControllerDock } from '@/components/interview/ControllerDock';
 import { useMicrophone } from '@/hooks/useMicrophone';
+import { useMediaDevices } from '@/hooks/useMediaDevices';
 import { getMeetingMessages } from '@/actions/getMeetingMessages';
 import { cancelMeeting } from '@/actions/cancelMeeting';
 
@@ -17,6 +18,10 @@ type WindowWithWebKitAudioContext = Window & typeof globalThis & {
   webkitAudioContext?: typeof AudioContext;
 };
 
+interface AudioContextWithSinkId extends AudioContext {
+  setSinkId(sinkId: string): Promise<void>;
+}
+
 export default function InterviewPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
   const meetingId = resolvedParams.id;
@@ -24,8 +29,14 @@ export default function InterviewPage({ params }: { params: Promise<{ id: string
   const [isMicOn, setIsMicOn] = useState(true);
   const [isAudioOn, setIsAudioOn] = useState(true);
   const [isCaptionOn, setIsCaptionOn] = useState(false);
-  const [selectedMic, setSelectedMic] = useState("Default Microphone");
-  const [selectedSpeaker, setSelectedSpeaker] = useState("Default Speaker");
+  const {
+    mics,
+    speakers,
+    selectedMic,
+    setSelectedMic,
+    selectedSpeaker,
+    setSelectedSpeaker
+  } = useMediaDevices();
 
   const [aiStatus, setAiStatus] = useState<"idle" | "thinking" | "speaking">("idle");
 
@@ -54,8 +65,17 @@ export default function InterviewPage({ params }: { params: Promise<{ id: string
     fetchMessages();
   }, [meetingId]);
 
+  // ── Handle Media Devices (Extracted to hook) ──
+
   // ── Microphone capture: sends binary audio chunks to WS ──
-  const { stream } = useMicrophone(wsRef.current, isMicOn && isConnected);
+  const { stream } = useMicrophone(wsRef.current, isMicOn && isConnected, selectedMic);
+
+  // ── Apply Speaker Output Selection ──
+  useEffect(() => {
+    if (audioCtxRef.current && selectedSpeaker && 'setSinkId' in audioCtxRef.current) {
+      (audioCtxRef.current as AudioContextWithSinkId).setSinkId(selectedSpeaker).catch(console.error);
+    }
+    }, [selectedSpeaker]);
 
   // ── Audio playback for binary TTS chunks from WS server ──
   const initAudioCtx = useCallback(() => {
@@ -395,6 +415,8 @@ export default function InterviewPage({ params }: { params: Promise<{ id: string
         setSelectedMic={setSelectedMic}
         selectedSpeaker={selectedSpeaker}
         setSelectedSpeaker={setSelectedSpeaker}
+        mics={mics}
+        speakers={speakers}
         onTakeBreak={onTakeBreak}
         onEndInterview={onEndInterview}
       />
