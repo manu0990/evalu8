@@ -10,6 +10,7 @@ import { useMicrophone } from '@/hooks/useMicrophone';
 import { useMediaDevices } from '@/hooks/useMediaDevices';
 import { getMeetingMessages } from '@/actions/getMeetingMessages';
 import { cancelMeeting } from '@/actions/cancelMeeting';
+import { toast } from 'sonner';
 
 import axios from 'axios';
 
@@ -51,6 +52,7 @@ export default function InterviewPage({ params }: { params: Promise<{ id: string
   const nextStartTimeRef = useRef<number>(0);
   const isReceivingRef = useRef(false);
   const connectionSeqRef = useRef(0);
+  const lastAudioChunksRef = useRef<ArrayBuffer[]>([]);
 
   const router = useRouter();
 
@@ -138,6 +140,22 @@ export default function InterviewPage({ params }: { params: Promise<{ id: string
     }, Math.max(0, nextStartTimeRef.current - audioCtx.currentTime) * 1000);
   }, [initAudioCtx]);
 
+  const onRepeatQuestion = useCallback(() => {
+    if (isPlaying || lastAudioChunksRef.current.length === 0) return;
+    
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ type: "playback_started" }));
+    }
+    
+    toast.info("Replaying last question");
+    
+    if (audioCtxRef.current) {
+      nextStartTimeRef.current = audioCtxRef.current.currentTime;
+    }
+    
+    lastAudioChunksRef.current.forEach(chunk => playAudioChunk(chunk));
+  }, [isPlaying, playAudioChunk]);
+
   // ── Sync mute state with gain node ──
   useEffect(() => {
     if (gainNodeRef.current) {
@@ -193,6 +211,7 @@ export default function InterviewPage({ params }: { params: Promise<{ id: string
 
           // Binary message = TTS audio chunk
           if (event.data instanceof ArrayBuffer) {
+            lastAudioChunksRef.current.push(event.data);
             playAudioChunk(event.data);
             return;
           }
@@ -208,6 +227,7 @@ export default function InterviewPage({ params }: { params: Promise<{ id: string
                 isReceivingRef.current = true;
                 setAiStatus('speaking');
                 setLiveTranscript('');
+                lastAudioChunksRef.current = [];
               }
               // Append token to the last AI message
               setMessages(prev => {
@@ -419,6 +439,7 @@ export default function InterviewPage({ params }: { params: Promise<{ id: string
         speakers={speakers}
         onTakeBreak={onTakeBreak}
         onEndInterview={onEndInterview}
+        onRepeatQuestion={onRepeatQuestion}
       />
 
     </main>

@@ -370,6 +370,9 @@ export function startWebSocketServer() {
             // Fallback text input (if ever needed)
             conversation.addUserMessage(msg.data);
             await streamAIResponse();
+          } else if (msg.type === "playback_started") {
+            // The client is replaying audio locally
+            isAiSpeaking = true;
           }
         } catch (err) {
           console.error("Failed to parse control message:", err);
