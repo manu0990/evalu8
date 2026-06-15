@@ -8,10 +8,23 @@ import { prisma } from "@repo/db";
 import { TTSService } from "./services/ttsService";
 import { STTService } from "./services/sttService";
 
+import { PrismaType } from "@repo/db";
+
+type MeetingWithRelations = PrismaType.MeetingGetPayload<{
+  include: {
+    resume: true;
+    interviewBlueprint: true;
+    messages: {
+      orderBy: { timestamp: 'asc' }
+    };
+  };
+}>;
+
 // Extend WebSocket interface to hold user data
 interface AuthenticatedWebSocket extends WebSocket {
   userId?: string;
   meetingId?: string;
+  meetingData?: MeetingWithRelations;
 }
 
 export function startWebSocketServer() {
@@ -70,9 +83,41 @@ export function startWebSocketServer() {
         throw err;
       }
 
+      // Fetch meeting and all required context
+      const meeting = await prisma.meeting.findUnique({
+        where: { id: meetingId },
+        include: {
+          resume: true,
+          interviewBlueprint: true,
+          messages: {
+            orderBy: { timestamp: 'asc' }
+          }
+        },
+      });
+
+      if (!meeting) {
+        socket.write("HTTP/1.1 404 Not Found\r\n\r\n");
+        socket.destroy();
+        return;
+      }
+
+      if (meeting.status === 'COMPLETED' || meeting.status === 'CANCELLED') {
+        socket.write("HTTP/1.1 403 Forbidden - Meeting ended\r\n\r\n");
+        socket.destroy();
+        return;
+      }
+
+      if (meeting.status === 'QUESTIONNAIRE_READY') {
+        await prisma.meeting.update({
+          where: { id: meetingId },
+          data: { status: 'IN_PROGRESS' },
+        });
+      }
+
       wss.handleUpgrade(request, socket, head, (ws: AuthenticatedWebSocket) => {
         ws.userId = ticket.userId;
         ws.meetingId = ticket.meetingId;
+        ws.meetingData = meeting;
         wss.emit("connection", ws, request);
       });
     } catch (error) {
@@ -96,6 +141,7 @@ export function startWebSocketServer() {
     // ── Accumulate final transcript segments until speech_final ──
     let pendingTranscript = "";
     let isAiSpeaking = false;
+    let lastAiMessage = "";
 
     const stt = new STTService({
       onTranscript: ({ transcript, isFinal, speechFinal }) => {
@@ -120,6 +166,31 @@ export function startWebSocketServer() {
 
           conversation.addUserMessage(userMessage);
           isAiSpeaking = true;
+
+          // Save pair to database if we have a previous AI message
+          if (lastAiMessage) {
+            const aiTextToSave = lastAiMessage;
+            lastAiMessage = ""; // Clear it so we don't save it again
+            
+            // Background async save
+            prisma.$transaction([
+              prisma.message.create({
+                data: {
+                  meetingId: socket.meetingId!,
+                  sender: "ASSISTANT",
+                  content: aiTextToSave,
+                }
+              }),
+              prisma.message.create({
+                data: {
+                  meetingId: socket.meetingId!,
+                  sender: "USER",
+                  content: userMessage,
+                }
+              })
+            ]).catch(err => console.error("Failed to save message pair:", err));
+          }
+
           // The stream ends quickly because Cartesia generates audio faster than real-time.
           // We rely on the frontend's 'playback_finished' event to toggle isAiSpeaking to false.
           streamAIResponse().catch((err) => console.error("Stream error after STT:", err));
@@ -147,15 +218,14 @@ export function startWebSocketServer() {
     let systemInstruction = "You are a helpful assistant conducting an interview.";
 
     try {
-      const meeting = await prisma.meeting.findUnique({
-        where: { id: socket.meetingId },
-        include: {
-          resume: true,
-          interviewBlueprint: true,
-        },
-      });
+      const meeting = socket.meetingData;
 
-      if (meeting) {
+      if (meeting && meeting.status === 'IN_PROGRESS') {
+        meeting.messages?.forEach((msg: { sender: string; content: string }) => {
+          if (msg.sender === 'USER') conversation.addUserMessage(msg.content);
+          else conversation.addAssistantMessage(msg.content);
+        });
+
         systemInstruction = [
           `You are Evalu8, a professional and friendly AI interviewer conducting a mock interview.`,
           ``,
@@ -251,6 +321,7 @@ export function startWebSocketServer() {
 
       if (assistantResponse.trim()) {
         conversation.addAssistantMessage(assistantResponse);
+        lastAiMessage = assistantResponse.trim();
       }
 
       if (socket.readyState === WebSocket.OPEN) {
@@ -264,10 +335,10 @@ export function startWebSocketServer() {
 
     // ── Send introductory greeting on connect ──
     try {
-      // Seed the conversation with a prompt that triggers the AI's opening
-      conversation.addUserMessage(
-        "The interview is starting now. Please greet the candidate and begin with your opening question."
-      );
+      if (conversation.getHistory().length) {
+        // Seed the conversation with a prompt that triggers the AI to resume
+        conversation.addSystemMessage("The candidate has returned from a short break. Please warmly welcome them back and resume the interview exactly where you left off. Ask your next question.");
+      }
 
       isAiSpeaking = true;
       // We start the greeting but don't reset isAiSpeaking immediately.

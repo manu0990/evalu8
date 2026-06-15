@@ -15,7 +15,16 @@ import {
   DropdownMenuSubContent,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
-  DropdownMenuLabel
+  DropdownMenuLabel,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
 } from '@repo/ui';
 import { Dispatch, SetStateAction } from 'react';
 
@@ -32,6 +41,7 @@ interface InterviewDockProps {
   setSelectedSpeaker: Dispatch<SetStateAction<string>>;
   mics?: string[];
   speakers?: string[];
+  onTakeBreak?: () => void;
   onEndInterview?: () => void;
 }
 
@@ -48,6 +58,7 @@ export function ControllerDock({
   setSelectedSpeaker,
   mics = ["Default Microphone", "MacBook Pro Microphone", "AirPods Pro"],
   speakers = ["Default Speaker", "MacBook Pro Speakers", "AirPods Pro"],
+  onTakeBreak,
   onEndInterview
 }: InterviewDockProps) {
   return (
@@ -106,16 +117,32 @@ export function ControllerDock({
         </TooltipProvider>
 
         {/* Break */}
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-14 w-14 rounded-full cursor-pointer text-muted-foreground hover:text-foreground hover:bg-accent">
-                <PauseCircle className="h-6 w-6" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent><p>Take a Break</p></TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+        <AlertDialog>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <AlertDialogTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-14 w-14 rounded-full cursor-pointer text-muted-foreground hover:text-foreground hover:bg-accent">
+                    <PauseCircle className="h-6 w-6" />
+                  </Button>
+                </AlertDialogTrigger>
+              </TooltipTrigger>
+              <TooltipContent><p>Take a Break</p></TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+          <AlertDialogContent className='border-primary/25'>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Want to take a break?</AlertDialogTitle>
+              <AlertDialogDescription>
+                You can safely leave, come back later and restart from where you left.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel className="cursor-pointer">Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={onTakeBreak} className="cursor-pointer">Cool, continue</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         {/* Repeat */}
         <TooltipProvider>
@@ -185,21 +212,36 @@ export function ControllerDock({
         </DropdownMenu>
 
         {/* End Button */}
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="destructive"
-                size="icon"
-                className="h-14 w-28 rounded-full hover:bg-destructive/90 shadow-none cursor-pointer"
-                onClick={onEndInterview}
-              >
-                <PhoneOff className="h-6 w-6" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent><p>End Interview</p></TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+        <AlertDialog>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="destructive"
+                    size="icon"
+                    className="h-14 w-28 rounded-full hover:bg-destructive/90 shadow-none cursor-pointer"
+                  >
+                    <PhoneOff className="h-6 w-6" />
+                  </Button>
+                </AlertDialogTrigger>
+              </TooltipTrigger>
+              <TooltipContent><p>End Interview</p></TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+          <AlertDialogContent className='border-primary/25'>
+            <AlertDialogHeader>
+              <AlertDialogTitle>End Interview Early?</AlertDialogTitle>
+              <AlertDialogDescription>
+                If you end the interview now, your progress will be lost and the post-interview analysis will not be available. Are you sure you want to exit?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel className="cursor-pointer">Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={onEndInterview} className="cursor-pointer bg-destructive hover:bg-destructive/90">Yes, I understand</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
       </div>
     </div>

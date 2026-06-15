@@ -1,12 +1,14 @@
 'use client';
 
-import { use, useState, useEffect, useRef, useCallback } from 'react';
 import { Wifi } from 'lucide-react';
 import { Badge } from '@repo/ui';
+import { useRouter } from 'next/navigation';
+import { use, useState, useEffect, useRef, useCallback } from 'react';
 import { InterviewCard } from '@/components/interview/InterviewCard';
 import { ControllerDock } from '@/components/interview/ControllerDock';
-import { useRouter } from 'next/navigation';
 import { useMicrophone } from '@/hooks/useMicrophone';
+import { getMeetingMessages } from '@/actions/getMeetingMessages';
+import { cancelMeeting } from '@/actions/cancelMeeting';
 
 import axios from 'axios';
 
@@ -40,6 +42,17 @@ export default function InterviewPage({ params }: { params: Promise<{ id: string
   const connectionSeqRef = useRef(0);
 
   const router = useRouter();
+
+  // ── Fetch existing messages on mount ──
+  useEffect(() => {
+    async function fetchMessages() {
+      const res = await getMeetingMessages(meetingId);
+      if (res.success && res.messages) {
+        setMessages(res.messages);
+      }
+    }
+    fetchMessages();
+  }, [meetingId]);
 
   // ── Microphone capture: sends binary audio chunks to WS ──
   const { stream } = useMicrophone(wsRef.current, isMicOn && isConnected);
@@ -254,6 +267,20 @@ export default function InterviewPage({ params }: { params: Promise<{ id: string
       audioCtxRef.current = null;
     }
     stream?.getTracks().forEach(t => t.stop());
+    await cancelMeeting(meetingId);
+    router.push("/meetings");
+  }
+
+  const onTakeBreak = async () => {
+    if (wsRef.current) {
+      wsRef.current.close();
+      wsRef.current = null;
+    }
+    if (audioCtxRef.current) {
+      await audioCtxRef.current.close().catch(() => undefined);
+      audioCtxRef.current = null;
+    }
+    stream?.getTracks().forEach(t => t.stop());
     router.push("/meetings");
   }
 
@@ -368,6 +395,7 @@ export default function InterviewPage({ params }: { params: Promise<{ id: string
         setSelectedMic={setSelectedMic}
         selectedSpeaker={selectedSpeaker}
         setSelectedSpeaker={setSelectedSpeaker}
+        onTakeBreak={onTakeBreak}
         onEndInterview={onEndInterview}
       />
 
