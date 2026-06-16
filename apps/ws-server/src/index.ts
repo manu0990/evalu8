@@ -244,6 +244,8 @@ export function startWebSocketServer() {
           `- Do not repeat your greeting once the interview has started.`,
           `- Do not mention that you cannot access a PDF. Use the resume/interviewer notes below as your resume context.`,
           `- Do NOT use markdown formatting or JSON in your responses. Speak naturally as you would in a real interview.`,
+          `- If the candidate asks to end the interview early, or if you have asked around ${meeting.interviewBlueprint?.totalQuestions || 5} questions and feel it has naturally concluded, you MUST call the end_interview tool to finish the session.`,
+          `- IMPORTANT: Before calling the end_interview tool, you MUST output a proper, polite goodbye message in your text response. If the candidate ends it midway, acknowledge it politely. If it's a natural conclusion, provide typical end-of-interview closing remarks and tell the analysis will be available shortly. Do not call the tool silently!`,
           `- Resume file: ${meeting.resume?.name || "not available"}`,
           meeting.interviewBlueprint
             ? `\n## Interview Blueprint\n- Total questions planned: ${meeting.interviewBlueprint.totalQuestions}\n- Categories: ${JSON.stringify(meeting.interviewBlueprint.categories)}\n- Rationale: ${meeting.interviewBlueprint.rationale}\n- Interviewer notes from resume analysis: ${meeting.interviewBlueprint.initialNotes}`
@@ -255,8 +257,49 @@ export function startWebSocketServer() {
       // Fall back to default system instruction
     }
 
+    let turnCount = conversation.getHistory().filter(m => m.role === 'assistant').length;
+    const totalQuestions = socket.meetingData?.interviewBlueprint?.totalQuestions || 5;
+    const hardLimit = totalQuestions + 3;
+    let pendingMeetingEnd = false;
+
+    const tools = [{
+      type: "function",
+      function: {
+        name: "end_interview",
+        description: "Call this tool when the interview naturally concludes or you have asked the planned number of questions.",
+        parameters: {
+          type: "object",
+          properties: {
+            reason: {
+              type: "string",
+              description: "The reason for ending the interview."
+            }
+          },
+          required: ["reason"]
+        }
+      }
+    }];
+
     // ── Helper: stream an AI response and send text + TTS to the client ──
     async function streamAIResponse() {
+      turnCount++;
+
+      if (turnCount === totalQuestions) {
+        conversation.addSystemMessage(`SYSTEM ALERT: You have reached the planned number of questions (${totalQuestions}). Please plan to conclude the interview gracefully within the next few turns.`);
+      } else if (turnCount === hardLimit - 1) {
+        conversation.addSystemMessage("SYSTEM ALERT: The interview time is up. Wrap up the interview immediately in one short sentence and call the end_interview tool.");
+      } else if (turnCount >= hardLimit) {
+        if (socket.readyState === WebSocket.OPEN) {
+          socket.send(JSON.stringify({ type: "meeting_completed" }));
+        }
+        prisma.meeting.update({
+          where: { id: socket.meetingId! },
+          data: { status: 'COMPLETED' },
+        }).catch(console.error);
+        socket.close();
+        return;
+      }
+
       const ttsStarted = ttsReady.then(async (enabled) => {
         if (!enabled) return false;
 
@@ -281,31 +324,39 @@ export function startWebSocketServer() {
       try {
         const stream = await streamCompletion(
           conversation.getHistory(),
-          systemInstruction
+          systemInstruction,
+          tools
         );
 
         for await (const chunk of stream) {
           if (socket.readyState !== WebSocket.OPEN) break;
 
-          const token = chunk;
+          if (chunk.type === "tool_call" && chunk.name === "end_interview") {
+            pendingMeetingEnd = true;
+            continue;
+          }
 
-          if (!token) continue;
+          if (chunk.type === "text") {
+            const token = chunk.content;
 
-          assistantResponse += token;
-          phraseBuffer += token;
+            if (!token) continue;
 
-          // send text token immediately
-          socket.send(
-            JSON.stringify({
-              type: "text",
-              data: token,
-            })
-          );
+            assistantResponse += token;
+            phraseBuffer += token;
 
-          // sentence boundary detection
-          if (/[.!?]\s*$/.test(phraseBuffer) || phraseBuffer.length > 80) {
-            queueTtsText(phraseBuffer);
-            phraseBuffer = "";
+            // send text token immediately
+            socket.send(
+              JSON.stringify({
+                type: "text",
+                data: token,
+              })
+            );
+
+            // sentence boundary detection
+            if (/[.!?]\s*$/.test(phraseBuffer) || phraseBuffer.length > 80) {
+              queueTtsText(phraseBuffer);
+              phraseBuffer = "";
+            }
           }
         }
 
@@ -313,6 +364,15 @@ export function startWebSocketServer() {
           queueTtsText(phraseBuffer);
         }
       } finally {
+        if (pendingMeetingEnd && assistantResponse.trim().length === 0) {
+          const fallbackMsg = "Thank you for your time. The interview is now concluded.";
+          queueTtsText(fallbackMsg);
+          assistantResponse = fallbackMsg;
+          if (socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify({ type: "text", data: fallbackMsg }));
+          }
+        }
+
         // Close this response's TTS context so the next one gets a fresh stream
         if (await ttsStarted) {
           await tts.endResponse();
@@ -366,6 +426,16 @@ export function startWebSocketServer() {
           if (msg.type === "playback_finished") {
             // The frontend finished playing the AI's audio chunks. Turn-taking resumes.
             isAiSpeaking = false;
+            if (pendingMeetingEnd) {
+              if (socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify({ type: "meeting_completed" }));
+              }
+              prisma.meeting.update({
+                where: { id: socket.meetingId! },
+                data: { status: 'COMPLETED' },
+              }).catch(console.error);
+              socket.close();
+            }
           } else if (msg.type === "user_message") {
             // Fallback text input (if ever needed)
             conversation.addUserMessage(msg.data);

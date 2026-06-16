@@ -248,6 +248,18 @@ export default function InterviewPage({ params }: { params: Promise<{ id: string
               setMessages(prev => [...prev, { role: 'user', content: msg.data }]);
               setLiveTranscript('');
               setAiStatus('thinking');
+            } else if (msg.type === 'meeting_completed') {
+              toast.success("The interview has concluded. Thank you!");
+              if (wsRef.current) {
+                wsRef.current.close();
+                wsRef.current = null;
+              }
+              if (audioCtxRef.current) {
+                void audioCtxRef.current.close().catch(() => undefined);
+                audioCtxRef.current = null;
+              }
+              stream?.getTracks().forEach(t => t.stop());
+              router.push("/analytics");
             } else if (msg.type === 'stt_status') {
               if (msg.data === 'error') {
                 console.error('Deepgram STT Error:', msg.error);
