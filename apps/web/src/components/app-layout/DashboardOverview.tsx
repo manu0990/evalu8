@@ -72,7 +72,7 @@ export function DashboardOverview({ stats }: DashboardOverviewProps) {
         {statCards.map((stat, index) => {
           const Icon = stat.icon;
           return (
-            <Card key={index} className="hover:shadow-md transition-shadow">
+            <Card key={index} className="hover:shadow-md transition-shadow border-primary/25">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -93,7 +93,7 @@ export function DashboardOverview({ stats }: DashboardOverviewProps) {
 
         {/* New Meeting Button Card */}
         <Card
-          className="hover:shadow-lg transition-all cursor-pointer border-dashed border-2 hover:border-primary hover:bg-accent/50"
+          className="hover:shadow-lg transition-all cursor-pointer border-dashed border-2 hover:border-primary/50 hover:bg-accent/50"
           onClick={() => setShowNewMeetingForm(true)}
         >
           <CardContent className="px-6 flex items-center justify-center min-h-[120px]">
@@ -115,7 +115,7 @@ export function DashboardOverview({ stats }: DashboardOverviewProps) {
       </div>
 
       {/* Status Breakdown */}
-      <Card>
+      <Card className='border-primary/25'>
         <CardHeader>
           <h3 className="text-lg font-semibold">Meeting Status Breakdown</h3>
         </CardHeader>
@@ -153,7 +153,7 @@ export function DashboardOverview({ stats }: DashboardOverviewProps) {
       </Card>
 
       {/* Quick Actions */}
-      <Card>
+      <Card className='border-primary/25'>
         <CardHeader>
           <h3 className="text-lg font-semibold">Quick Tips</h3>
         </CardHeader>

@@ -1,15 +1,15 @@
 'use client';
 
 import { Card, CardHeader, CardContent, CardFooter, Button, Badge } from "@repo/ui";
-import { Building2, Calendar, Clock, Play, Eye, MoreHorizontal, ExternalLink, X } from "lucide-react";
+import { Building2, Calendar, Clock, Play, Eye, MoreHorizontal, ExternalLink, X, PieChart } from "lucide-react";
+import Link from "next/link";
 import { Meeting } from "./MeetingGrid";
+import { useRouter } from "next/navigation";
 
 export type MeetingStatus = 'PENDING' | 'QUESTIONNAIRE_READY' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
 
 interface MeetingCardProps {
   meeting: Meeting;
-  onStart: (meetingId: string) => void;
-  onView: (meetingId: string) => void;
 }
 
 export const statusConfig = {
@@ -40,7 +40,9 @@ export const statusConfig = {
   }
 };
 
-export function MeetingCard({ meeting, onStart, onView }: MeetingCardProps) {
+export function MeetingCard({ meeting }: MeetingCardProps) {
+  const router = useRouter()
+
   const status = statusConfig[meeting.status as MeetingStatus];
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -61,20 +63,30 @@ export function MeetingCard({ meeting, onStart, onView }: MeetingCardProps) {
     switch (meeting.status) {
       case 'COMPLETED':
         return (
-          <Button
-            variant="outline"
-            className="flex-1 cursor-pointer"
-            onClick={() => onView(meeting.id)}
-          >
-            <Eye className="mr-2 h-4 w-4" />
-            View Results
-          </Button>
+          <>
+            <Button
+              variant="outline"
+              className="flex-1 cursor-pointer"
+              onClick={() => router.push(`/meetings/${meeting.id}`)}
+            >
+              <Eye className="mr-2 h-4 w-4" />
+              View Results
+            </Button>
+            <Button
+              variant="default"
+              className="flex-1 cursor-pointer"
+              onClick={() => router.push(`/analytics/${meeting.id}`)}
+            >
+              <PieChart className="mr-2 h-4 w-4" />
+              View Analysis
+            </Button>
+          </>
         );
       case 'QUESTIONNAIRE_READY':
         return (
           <Button
             className="flex-1 cursor-pointer"
-            onClick={() => onStart(meeting.id)}
+            onClick={() => router.push(`/interview/${meeting.id}`)}
           >
             <Play className="mr-2 h-4 w-4" />
             Start Interview
@@ -82,14 +94,24 @@ export function MeetingCard({ meeting, onStart, onView }: MeetingCardProps) {
         );
       case 'IN_PROGRESS':
         return (
-          <Button
-            variant="destructive"
-            className="flex-1 cursor-pointer"
-            onClick={() => onStart(meeting.id)}
-          >
-            <Play className="mr-2 h-4 w-4" />
-            Resume Interview
-          </Button>
+          <>
+            <Button
+              variant="outline"
+              className="flex-1 cursor-pointer"
+              onClick={() => router.push(`/meetings/${meeting.id}`)}
+            >
+              <Eye className="mr-2 h-4 w-4" />
+              View
+            </Button>
+            <Button
+              variant="destructive"
+              className="flex-1 cursor-pointer"
+              onClick={() => router.push(`/interview/${meeting.id}`)}
+            >
+              <Play className="mr-2 h-4 w-4" />
+              Resume
+            </Button>
+          </>
         );
       case 'PENDING':
         return (
@@ -119,7 +141,7 @@ export function MeetingCard({ meeting, onStart, onView }: MeetingCardProps) {
   };
 
   return (
-    <Card className="group hover:shadow-md transition-shadow">
+    <Card className="border-primary/25 group hover:shadow-md transition-shadow">
       <CardHeader>
         <div className="flex items-start justify-between">
           <div className="space-y-1">

@@ -4,11 +4,9 @@ import { useState, useEffect } from 'react';
 import { MeetingGrid, type Meeting } from '@/components/app-layout/MeetingGrid';
 import { NewMeetingForm } from '@/components/app-layout/NewMeetingForm';
 import { getMeetings } from '@/actions/getMeetings';
-import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 
 export default function MeetingsPage() {
-  const router = useRouter();
   const [showNewMeetingForm, setShowNewMeetingForm] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [meetings, setMeetings] = useState<Meeting[]>([]);
@@ -43,15 +41,6 @@ export default function MeetingsPage() {
     setShowNewMeetingForm(true);
   };
 
-  const handleStartMeeting = async (meetingId: string) => {
-    console.log('Starting meeting:', meetingId);
-    router.push(`/interview/${meetingId}`);
-  };
-
-  const handleViewMeeting = (meetingId: string) => {
-    console.log('Viewing meeting:', meetingId);
-    router.push(`/meetings/${meetingId}`);
-  };
 
   return (
     <main className="flex-1 overflow-auto">
@@ -73,8 +62,6 @@ export default function MeetingsPage() {
           ) : (
             <MeetingGrid
               meetings={meetings}
-              onStart={handleStartMeeting}
-              onView={handleViewMeeting}
               onCreateNew={handleCreateMeeting}
               isLoading={isLoading}
             />

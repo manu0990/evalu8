@@ -121,3 +121,6 @@ export {
   SelectScrollDownButton,
 } from "@/components/select";
 export { Textarea } from "@/components/textarea";
+export { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/tabs";
+export { ScrollArea, ScrollBar } from "@/components/scroll-area";
+export { Avatar, AvatarImage, AvatarFallback } from "@/components/avatar";

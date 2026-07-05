@@ -18,13 +18,11 @@ export interface Meeting {
 
 interface MeetingGridProps {
   meetings: Meeting[];
-  onStart: (meetingId: string) => void;
-  onView: (meetingId: string) => void;
   onCreateNew?: () => void;
   isLoading?: boolean;
 }
 
-export function MeetingGrid({ meetings, onStart, onView, onCreateNew, isLoading }: MeetingGridProps) {
+export function MeetingGrid({ meetings, onCreateNew, isLoading }: MeetingGridProps) {
   if (isLoading) {
     return (
       <div className="flex justify-center items-center py-12">
@@ -53,8 +51,6 @@ export function MeetingGrid({ meetings, onStart, onView, onCreateNew, isLoading 
         <MeetingCard
           key={meeting.id}
           meeting={meeting}
-          onStart={onStart}
-          onView={onView}
         />
       ))}
     </div>
