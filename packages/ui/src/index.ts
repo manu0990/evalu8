@@ -124,3 +124,12 @@ export { Textarea } from "@/components/textarea";
 export { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/tabs";
 export { ScrollArea, ScrollBar } from "@/components/scroll-area";
 export { Avatar, AvatarImage, AvatarFallback } from "@/components/avatar";
+export {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  ChartLegend,
+  ChartLegendContent,
+  ChartStyle,
+  type ChartConfig,
+} from "@/components/chart";

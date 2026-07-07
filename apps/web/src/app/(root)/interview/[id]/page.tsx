@@ -161,6 +161,8 @@ export default function InterviewPage({ params }: { params: Promise<{ id: string
     if (gainNodeRef.current) {
       gainNodeRef.current.gain.value = isAudioOn ? 1 : 0;
     }
+
+     
   }, [isAudioOn]);
 
   // ── Connect to WS server ──
@@ -305,6 +307,7 @@ export default function InterviewPage({ params }: { params: Promise<{ id: string
         audioCtxRef.current = null;
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [meetingId, playAudioChunk]);
 
 

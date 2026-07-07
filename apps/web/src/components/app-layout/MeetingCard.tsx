@@ -2,7 +2,6 @@
 
 import { Card, CardHeader, CardContent, CardFooter, Button, Badge } from "@repo/ui";
 import { Building2, Calendar, Clock, Play, Eye, MoreHorizontal, ExternalLink, X, PieChart } from "lucide-react";
-import Link from "next/link";
 import { Meeting } from "./MeetingGrid";
 import { useRouter } from "next/navigation";
 

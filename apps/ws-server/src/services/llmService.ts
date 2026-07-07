@@ -9,6 +9,7 @@ export type StreamEvent =
 export async function* streamCompletion(
   messages: ConversationMessage[],
   systemInstruction: string,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   tools?: any[]
 ): AsyncGenerator<StreamEvent> {
   const stream = await llm.chat.completions.create({
