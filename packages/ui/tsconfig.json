@@ -1,9 +1,9 @@
 {
   "extends": "@repo/typescript-config/react-library.json",
   "compilerOptions": {
-    "baseUrl": "./src",
+    // "baseUrl": "./src",   // because 'baseUrl' is deprecated and will stop functioning in TypeScript 7.0; configured in 'paths'
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./src/*"]
     }
   },
   "include": ["src"],

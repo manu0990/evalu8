@@ -61,26 +61,7 @@ export async function createMeeting(input: CreateMeetingInput): Promise<ActionRe
       };
     }
 
-    // generate blueprint first
-    let blueprintData;
-    try {
-      blueprintData = await generateBlueprint(
-        input.resume.key,
-        input.companyName,
-        input.companyWebsite || null,
-        input.roleToApply,
-        input.requirements
-      );
-    } catch (blueprintError) {
-      console.error(`[createMeeting] Blueprint generation failed:`, blueprintError);
-      return {
-        success: false,
-        message: "Failed to generate interview blueprint",
-        error: blueprintError instanceof Error ? blueprintError.message : "Failed to generate blueprint. Please try again.",
-      };
-    }
-
-    // save everything to database
+    // save meeting to database immediately with PENDING status
     const meeting = await prisma.$transaction(async (tx) => {
       // create resume record first
       const newResume = await tx.resume.create({
@@ -92,7 +73,7 @@ export async function createMeeting(input: CreateMeetingInput): Promise<ActionRe
         },
       });
 
-      // create meeting with the resume ID
+      // create meeting with PENDING status (blueprint not yet generated)
       const newMeeting = await tx.meeting.create({
         data: {
           userId,
@@ -100,26 +81,49 @@ export async function createMeeting(input: CreateMeetingInput): Promise<ActionRe
           companyWebsite: input.companyWebsite || null,
           roleToApply: input.roleToApply,
           requirements: input.requirements,
-          status: "QUESTIONNAIRE_READY",
+          status: "PENDING",
           resumeId: newResume.id,
-        },
-      });
-
-      // create blueprint
-      await tx.interviewBlueprint.create({
-        data: {
-          meetingId: newMeeting.id,
-          totalQuestions: blueprintData.total_questions,
-          categories: blueprintData.categories as unknown as PrismaType.InputJsonValue,
-          rationale: blueprintData.rationale,
-          initialNotes: blueprintData.initial_notes,
         },
       });
 
       return newMeeting;
     });
 
-    console.log(`[createMeeting] Meeting and blueprint saved with ID: ${meeting.id}`);
+    console.log(`[createMeeting] Meeting created with ID: ${meeting.id}, generating blueprint in background...`);
+
+    // Fire-and-forget: generate blueprint in background
+    generateBlueprint(
+      input.resume.key,
+      input.companyName,
+      input.companyWebsite || null,
+      input.roleToApply,
+      input.requirements
+    )
+      .then(async (blueprintData) => {
+        await prisma.interviewBlueprint.create({
+          data: {
+            meetingId: meeting.id,
+            totalQuestions: blueprintData.total_questions,
+            categories: blueprintData.categories as unknown as PrismaType.InputJsonValue,
+            rationale: blueprintData.rationale,
+            initialNotes: blueprintData.initial_notes,
+          },
+        });
+        await prisma.meeting.update({
+          where: { id: meeting.id },
+          data: { status: "QUESTIONNAIRE_READY" },
+        });
+        console.log(`[createMeeting] Blueprint generated and saved for meeting: ${meeting.id}`);
+      })
+      .catch(async (err) => {
+        console.error(`[createMeeting] Background blueprint generation failed for meeting ${meeting.id}:`, err);
+        await prisma.meeting.update({
+          where: { id: meeting.id },
+          data: { status: "FAILED" },
+        }).catch((updateErr) => {
+          console.error(`[createMeeting] Failed to update meeting status to FAILED:`, updateErr);
+        });
+      });
 
     return {
       success: true,

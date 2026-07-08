@@ -4,6 +4,7 @@ import { useState, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
+import { CircularProgress } from '@/components/CircleProgressbar';
 import { Card, CardHeader, CardContent, CardFooter, Button, Input, Textarea, Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@repo/ui";
 import { Building2, FileText, Link, Briefcase, FileCheck, Trash, Paperclip } from "lucide-react";
 import { toast } from 'sonner';
@@ -14,42 +15,8 @@ import axios, { AxiosProgressEvent } from 'axios';
 import { cn } from '@/lib/utils';
 import { newMeetingFormSchema, type newMeetingFormTypes } from '@/lib/validation/meeting';
 
-function CircularProgress({ progress }: { progress: number }) {
-  const radius = 20;
-  const circumference = 2 * Math.PI * radius;
-  const offset = circumference - (progress / 100) * circumference;
 
-  return (
-    <div className="relative w-14 h-14 flex items-center justify-center">
-      <svg className="transform -rotate-90" width="56" height="56">
-        <circle
-          cx="28"
-          cy="28"
-          r={radius}
-          stroke="currentColor"
-          strokeWidth="4"
-          fill="none"
-          className="text-muted"
-        />
-        <circle
-          cx="28"
-          cy="28"
-          r={radius}
-          stroke="currentColor"
-          strokeWidth="4"
-          fill="none"
-          strokeDasharray={circumference}
-          strokeDashoffset={offset}
-          className="text-primary transition-all duration-300"
-          strokeLinecap="round"
-        />
-      </svg>
-      <span className="absolute text-xs font-semibold">{progress}%</span>
-    </div>
-  );
-}
-
-export function NewMeetingForm({ onCancel }: { onCancel: () => void }) {
+export function NewMeetingForm({ onCancel, onSuccess }: { onCancel: () => void; onSuccess?: () => void }) {
   const router = useRouter();
   const form = useForm<newMeetingFormTypes>({
     resolver: zodResolver(newMeetingFormSchema),
@@ -166,8 +133,12 @@ export function NewMeetingForm({ onCancel }: { onCancel: () => void }) {
       }
       toast.success("Meeting created successfully!");
 
-      // Navigate to meetings page
-      router.push('/meetings');
+      // Close form and refresh meetings list
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        router.push('/meetings');
+      }
     } catch (err) {
       console.error(err);
       toast.error("Failed to create meeting");

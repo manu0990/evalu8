@@ -1,14 +1,25 @@
 'use client';
 
-import { Card, CardHeader, CardContent, CardFooter, Button, Badge } from "@repo/ui";
-import { Building2, Calendar, Clock, Play, Eye, MoreHorizontal, ExternalLink, X, PieChart } from "lucide-react";
+import { useState } from 'react';
+import {
+  Card, CardHeader, CardContent, CardFooter, Button, Badge,
+  AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader,
+  AlertDialogTitle, AlertDialogDescription, AlertDialogFooter,
+  AlertDialogCancel, AlertDialogAction,
+} from "@repo/ui";
+import { Building2, Calendar, Clock, Play, Eye, ExternalLink, X, PieChart, Trash, RefreshCw } from "lucide-react";
 import { Meeting } from "./MeetingGrid";
 import { useRouter } from "next/navigation";
+import { deleteMeeting } from "@/actions/deleteMeeting";
+import { retryBlueprintGeneration } from "@/actions/retryBlueprintGeneration";
+import { toast } from "sonner";
 
-export type MeetingStatus = 'PENDING' | 'QUESTIONNAIRE_READY' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+export type MeetingStatus = 'PENDING' | 'QUESTIONNAIRE_READY' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'FAILED';
 
 interface MeetingCardProps {
   meeting: Meeting;
+  onDelete?: (meetingId: string) => void;
+  onStatusChange?: (meetingId: string, newStatus: MeetingStatus) => void;
 }
 
 export const statusConfig = {
@@ -36,11 +47,17 @@ export const statusConfig = {
     label: 'Cancelled',
     variant: 'destructive' as const,
     description: 'Interview session was cancelled'
+  },
+  FAILED: {
+    label: 'Failed',
+    variant: 'destructive' as const,
+    description: 'Blueprint generation failed — retry or delete'
   }
 };
 
-export function MeetingCard({ meeting }: MeetingCardProps) {
-  const router = useRouter()
+export function MeetingCard({ meeting, onDelete, onStatusChange }: MeetingCardProps) {
+  const router = useRouter();
+  const [isRetrying, setIsRetrying] = useState(false);
 
   const status = statusConfig[meeting.status as MeetingStatus];
   const formatDate = (dateString: string) => {
@@ -56,6 +73,37 @@ export function MeetingCard({ meeting }: MeetingCardProps) {
       hour: '2-digit',
       minute: '2-digit'
     });
+  };
+
+  const handleDelete = async () => {
+    try {
+      const result = await deleteMeeting(meeting.id);
+      if (result.success) {
+        toast.success("Meeting deleted");
+        onDelete?.(meeting.id);
+      } else {
+        toast.error(result.error || "Failed to delete meeting");
+      }
+    } catch {
+      toast.error("Failed to delete meeting");
+    }
+  };
+
+  const handleRetry = async () => {
+    setIsRetrying(true);
+    try {
+      const result = await retryBlueprintGeneration(meeting.id);
+      if (result.success) {
+        toast.success("Retrying blueprint generation...");
+        onStatusChange?.(meeting.id, 'PENDING');
+      } else {
+        toast.error(result.error || "Failed to retry");
+      }
+    } catch {
+      toast.error("Failed to retry blueprint generation");
+    } finally {
+      setIsRetrying(false);
+    }
   };
 
   const renderActionButton = () => {
@@ -83,13 +131,23 @@ export function MeetingCard({ meeting }: MeetingCardProps) {
         );
       case 'QUESTIONNAIRE_READY':
         return (
-          <Button
-            className="flex-1 cursor-pointer"
-            onClick={() => router.push(`/interview/${meeting.id}`)}
-          >
-            <Play className="mr-2 h-4 w-4" />
-            Start Interview
-          </Button>
+          <>
+            <Button
+              variant="outline"
+              className="flex-1 cursor-pointer"
+              onClick={() => router.push(`/meetings/${meeting.id}`)}
+            >
+              <Eye className="mr-2 h-4 w-4" />
+              View
+            </Button>
+            <Button
+              className="flex-1 cursor-pointer"
+              onClick={() => router.push(`/interview/${meeting.id}`)}
+            >
+              <Play className="mr-2 h-4 w-4" />
+              Start Interview
+            </Button>
+          </>
         );
       case 'IN_PROGRESS':
         return (
@@ -103,8 +161,7 @@ export function MeetingCard({ meeting }: MeetingCardProps) {
               View
             </Button>
             <Button
-              variant="destructive"
-              className="flex-1 cursor-pointer"
+              className="flex-1 cursor-pointer bg-blue-400 hover:bg-blue-500"
               onClick={() => router.push(`/interview/${meeting.id}`)}
             >
               <Play className="mr-2 h-4 w-4" />
@@ -125,13 +182,35 @@ export function MeetingCard({ meeting }: MeetingCardProps) {
         );
       case 'CANCELLED':
         return (
+          <>
+            <Button
+              variant="outline"
+              className="flex-1 cursor-pointer"
+              onClick={() => router.push(`/meetings/${meeting.id}`)}
+            >
+              <Eye className="mr-2 h-4 w-4" />
+              View
+            </Button>
+            <Button
+              variant="destructive"
+              className="flex-1 cursor-pointer"
+              disabled
+            >
+              <X className="mr-2 h-4 w-4" />
+              Cancelled
+            </Button>
+          </>
+        );
+      case 'FAILED':
+        return (
           <Button
-            variant="destructive"
+            variant="default"
             className="flex-1 cursor-pointer"
-            disabled
+            onClick={handleRetry}
+            disabled={isRetrying}
           >
-            <X className="mr-2 h-4 w-4" />
-            Cancelled
+            <RefreshCw className={`mr-2 h-4 w-4 ${isRetrying ? 'animate-spin' : ''}`} />
+            {isRetrying ? 'Retrying...' : 'Retry Generation'}
           </Button>
         );
       default:
@@ -170,9 +249,31 @@ export function MeetingCard({ meeting }: MeetingCardProps) {
             <Badge variant={status.variant}>
               {status.label}
             </Badge>
-            <Button variant="ghost" size="icon-sm">
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
+
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="ghost" size="icon-sm" className="cursor-pointer text-muted-foreground hover:text-destructive">
+                  <Trash className="h-4 w-4" />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent className='border-accent'>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete Meeting</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will permanently delete the meeting for <strong>{meeting.companyName}</strong> ({meeting.roleToApply}) and all associated data. This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel className="cursor-pointer">Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleDelete}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90 cursor-pointer"
+                  >
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </div>
       </CardHeader>

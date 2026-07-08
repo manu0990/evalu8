@@ -61,6 +61,10 @@ export default function MeetingDetailsPage({ params }: { params: Promise<{ id: s
 
   const canStartMeeting = meeting.status === 'QUESTIONNAIRE_READY' || meeting.status === 'IN_PROGRESS';
 
+  let blueprintEmptyDescription = "The interview structure will appear here once the system finishes processing.";
+  if (meeting.status === 'CANCELLED') blueprintEmptyDescription = "This meeting was cancelled before the blueprint was generated.";
+  else if (meeting.status === 'FAILED') blueprintEmptyDescription = "Blueprint generation failed. Please try again or create a new meeting.";
+
   return (
     /** 
      * Outer container: 
@@ -145,7 +149,7 @@ export default function MeetingDetailsPage({ params }: { params: Promise<{ id: s
                   <CardContent>
                     <div className="rounded-lg p-6">
                         <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">
-                        {meeting.requirements}
+                        {meeting.requirements || "No requirements provided."}
                         </p>
                     </div>
                   </CardContent>
@@ -208,7 +212,7 @@ export default function MeetingDetailsPage({ params }: { params: Promise<{ id: s
                 <EmptyState 
                   icon={<ListTodo className="h-12 w-12" />} 
                   title="No Blueprint Generated" 
-                  description="The interview structure will appear here once the system finishes processing."
+                  description={blueprintEmptyDescription}
                 />
               )}
               </TabsContent>
