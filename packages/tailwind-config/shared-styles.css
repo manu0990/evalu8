@@ -215,6 +215,7 @@
 
 body {
   letter-spacing: var(--tracking-normal);
+  overflow-y: scroll;
 }
 
 /* Font family utilities */

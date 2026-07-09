@@ -1,7 +1,7 @@
 'use client';
 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarMenuSub, SidebarMenuSubButton, SidebarMenuSubItem } from "@repo/ui";
-import { Home, Calendar, BarChart3, Settings, HelpCircle, User, ChevronDown, Monitor, Sparkles, LogOut, FileText } from "lucide-react";
+import { Home, Calendar, Settings, HelpCircle, User, ChevronDown, Monitor, Sparkles, LogOut, FileText } from "lucide-react";
 import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
@@ -18,7 +18,6 @@ interface AppSidebarProps {
 const generalNav = [
   { name: 'Dashboard', key: 'dashboard' as const, icon: Home, href: '/dashboard' },
   { name: 'Meetings', key: 'meetings' as const, icon: Calendar, href: '/meetings' },
-  { name: 'Analytics', key: 'analytics' as const, icon: BarChart3, href: '/analytics' },
 ];
 
 const settingsSubNav = [

@@ -142,6 +142,8 @@ export function startWebSocketServer() {
     let pendingTranscript = "";
     let isAiSpeaking = false;
     let lastAiMessage = "";
+    let isInGracePeriod = false;
+    let gracePeriodTimeout: NodeJS.Timeout | null = null;
 
     const stt = new STTService({
       onTranscript: ({ transcript, isFinal, speechFinal }) => {
@@ -162,6 +164,27 @@ export function startWebSocketServer() {
 
           if (socket.readyState === WebSocket.OPEN) {
             socket.send(JSON.stringify({ type: "user_message", data: userMessage }));
+          }
+
+          if (isInGracePeriod) {
+            if (gracePeriodTimeout) clearTimeout(gracePeriodTimeout);
+            prisma.message.create({
+              data: {
+                meetingId: socket.meetingId!,
+                sender: "USER",
+                content: userMessage,
+              }
+            }).catch(err => console.error("Failed to save final user message:", err));
+            
+            if (socket.readyState === WebSocket.OPEN) {
+              socket.send(JSON.stringify({ type: "meeting_completed" }));
+            }
+            prisma.meeting.update({
+              where: { id: socket.meetingId! },
+              data: { status: 'COMPLETED' },
+            }).catch(console.error);
+            socket.close();
+            return;
           }
 
           conversation.addUserMessage(userMessage);
@@ -363,7 +386,27 @@ export function startWebSocketServer() {
         if (phraseBuffer.length > 0) {
           queueTtsText(phraseBuffer);
         }
+      } catch (err) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const error = err as Record<string, any>;
+        if (error?.error?.code === 'tool_use_failed' && error?.error?.failed_generation) {
+          assistantResponse = error.error.failed_generation;
+        } else {
+          console.error("LLM streaming error:", err);
+        }
       } finally {
+        const funcRegex = /<function=end_interview.*?<\/function>/gi;
+        if (funcRegex.test(assistantResponse)) {
+          pendingMeetingEnd = true;
+          assistantResponse = assistantResponse.replace(funcRegex, '').trim();
+          if (socket.readyState === WebSocket.OPEN && assistantResponse.length > 0) {
+            socket.send(JSON.stringify({ 
+              type: "replace_last_ai_message", 
+              data: assistantResponse 
+            }));
+          }
+        }
+
         if (pendingMeetingEnd && assistantResponse.trim().length === 0) {
           const fallbackMsg = "Thank you for your time. The interview is now concluded.";
           queueTtsText(fallbackMsg);
@@ -427,14 +470,33 @@ export function startWebSocketServer() {
             // The frontend finished playing the AI's audio chunks. Turn-taking resumes.
             isAiSpeaking = false;
             if (pendingMeetingEnd) {
+              isInGracePeriod = true;
+              
               if (socket.readyState === WebSocket.OPEN) {
-                socket.send(JSON.stringify({ type: "meeting_completed" }));
+                 socket.send(JSON.stringify({ type: "grace_period" }));
               }
-              prisma.meeting.update({
-                where: { id: socket.meetingId! },
-                data: { status: 'COMPLETED' },
-              }).catch(console.error);
-              socket.close();
+
+              if (lastAiMessage) {
+                 prisma.message.create({
+                    data: {
+                       meetingId: socket.meetingId!,
+                       sender: "ASSISTANT",
+                       content: lastAiMessage,
+                    }
+                 }).catch(err => console.error("Failed to save AI farewell message:", err));
+                 lastAiMessage = "";
+              }
+
+              gracePeriodTimeout = setTimeout(() => {
+                 if (socket.readyState === WebSocket.OPEN) {
+                    socket.send(JSON.stringify({ type: "meeting_completed" }));
+                 }
+                 prisma.meeting.update({
+                    where: { id: socket.meetingId! },
+                    data: { status: 'COMPLETED' },
+                 }).catch(console.error);
+                 socket.close();
+              }, 20000);
             }
           } else if (msg.type === "user_message") {
             // Fallback text input (if ever needed)

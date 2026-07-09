@@ -77,7 +77,7 @@ model Meeting {
   resume Resume @relation(fields: [resumeId], references: [id])
 
   messages           Message[]
-  evaluation         Evaluation?
+  analyses           Analysis[]
   interviewBlueprint InterviewBlueprint?
   wsTickets          WsTicket[]
 }
@@ -103,14 +103,31 @@ model Resume {
   user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-model Evaluation {
-  id        String   @id @default(cuid())
-  meetingId String   @unique
-  score     Int
-  feedback  String   @db.Text
-  createdAt DateTime @default(now())
+model Analysis {
+  id        String         @id @default(cuid())
+  meetingId String
+  type      AnalysisType
+  status    AnalysisStatus @default(PENDING)
+  score     Float?
+  feedback  String?        @db.Text
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
 
-  meeting Meeting @relation(fields: [meetingId], references: [id])
+  meeting Meeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+
+  @@unique([meetingId, type])
+}
+
+enum AnalysisType {
+  INTERVIEW_ANALYSIS
+  RESUME_ANALYSIS
+}
+
+enum AnalysisStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
 }
 
 model InterviewBlueprint {

@@ -245,6 +245,20 @@ export default function InterviewPage({ params }: { params: Promise<{ id: string
             } else if (msg.type === 'done') {
               setAiStatus('idle');
               isReceivingRef.current = false;
+            } else if (msg.type === 'replace_last_ai_message') {
+              setMessages(prev => {
+                const newMessages = [...prev];
+                for (let i = newMessages.length - 1; i >= 0; i--) {
+                  const currentMsg = newMessages[i];
+                  if (currentMsg && currentMsg.role === 'ai') {
+                    newMessages[i] = { role: 'ai', content: msg.data };
+                    break;
+                  }
+                }
+                return newMessages;
+              });
+            } else if (msg.type === 'grace_period') {
+              toast.info("Interview ending soon. You can say your final words...", { duration: 15000 });
             } else if (msg.type === 'user_message') {
               // The backend sends the full accumulated user message
               setMessages(prev => [...prev, { role: 'user', content: msg.data }]);
@@ -261,7 +275,7 @@ export default function InterviewPage({ params }: { params: Promise<{ id: string
                 audioCtxRef.current = null;
               }
               stream?.getTracks().forEach(t => t.stop());
-              router.push("/analytics");
+              router.push(`/analytics/${meetingId}`);
             } else if (msg.type === 'stt_status') {
               if (msg.data === 'error') {
                 console.error('Deepgram STT Error:', msg.error);

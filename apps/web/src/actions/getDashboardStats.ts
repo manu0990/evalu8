@@ -84,13 +84,17 @@ export async function getDashboardStats(): Promise<ActionResponse<DashboardStats
     }));
 
     // Average score
-    const evaluations = await prisma.evaluation.findMany({
-      where: { meeting: { userId } },
+    const analyses = await prisma.analysis.findMany({
+      where: { 
+        meeting: { userId },
+        status: 'COMPLETED',
+        type: 'INTERVIEW_ANALYSIS'
+      },
       select: { score: true },
     });
     
-    const averageScore = evaluations.length > 0
-      ? Math.round(evaluations.reduce((sum, e) => sum + e.score, 0) / evaluations.length)
+    const averageScore = analyses.length > 0
+      ? Math.round((analyses.reduce((sum, a) => sum + (a.score ?? 0), 0) / analyses.length) * 10) / 10
       : null;
 
     // Recent meetings (last 5)
@@ -104,7 +108,10 @@ export async function getDashboardStats(): Promise<ActionResponse<DashboardStats
         roleToApply: true,
         status: true,
         createdAt: true,
-        evaluation: { select: { score: true } },
+        analyses: { 
+          where: { type: 'INTERVIEW_ANALYSIS', status: 'COMPLETED' }, 
+          select: { score: true } 
+        },
       },
     });
 
@@ -136,7 +143,7 @@ export async function getDashboardStats(): Promise<ActionResponse<DashboardStats
           roleToApply: m.roleToApply,
           status: m.status as MeetingStatus,
           createdAt: m.createdAt.toISOString(),
-          score: m.evaluation?.score ?? undefined,
+          score: m.analyses?.[0]?.score ?? undefined,
         })),
       },
     };
