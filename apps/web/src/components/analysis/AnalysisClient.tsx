@@ -98,7 +98,11 @@ export function AnalysisClient({ meeting, initialAnalyses }: AnalysisClientProps
         {!allCompleted && (
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button disabled={isAnyRunning} size="lg" className="shadow-sm active:scale-95 transition-all">
+              <Button 
+                disabled={isAnyRunning} 
+                size="lg" 
+                className="shadow-sm active:scale-95 transition-all cursor-pointer"
+              >
                 {isAnyRunning ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4 fill-current" />}
                 {isAnyRunning ? "Processing..." : "Run All Analyses"}
               </Button>

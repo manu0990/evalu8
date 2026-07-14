@@ -123,14 +123,14 @@ export function AnalysisCard({
   if (status === 'processing') {
     return (
       <Card className="overflow-hidden shadow-sm transition-all duration-300 relative">
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-muted/20 to-transparent -translate-x-full animate-[shimmer_2s_infinite]" />
+        <div className="absolute inset-0 bg-linear-to-r from-transparent via-muted/20 to-transparent -translate-x-full animate-[shimmer_2s_infinite]" />
         <div className="p-6 md:p-8 flex flex-col items-center justify-center text-center space-y-4 min-h-[300px]">
           <div className="w-16 h-16 rounded-full bg-muted/30 flex items-center justify-center">
             <Icon className={`w-8 h-8 ${accentColor} animate-pulse`} />
           </div>
           <h3 className="font-semibold text-lg">Analyzing...</h3>
           <p className="text-sm text-muted-foreground max-w-sm">
-            AI is reviewing the data and generating your feedback report. This usually takes 10-20 seconds.
+            AI is reviewing the data and generating your feedback report. This can take few minutes.
           </p>
           <Button disabled variant="outline" className="mt-4">
             <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Processing
@@ -171,7 +171,7 @@ export function AnalysisCard({
           {description}
         </p>
         <div className="pt-4 flex flex-col items-center space-y-2">
-          <Button onClick={onRun} disabled={isRunning} className="min-w-[200px]">
+          <Button onClick={onRun} disabled={isRunning} className="min-w-[200px] cursor-pointer">
             Run Analysis
           </Button>
           <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Uses 1 Analysis Credit</span>

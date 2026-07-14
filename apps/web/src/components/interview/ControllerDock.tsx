@@ -49,6 +49,8 @@ interface InterviewDockProps {
   onTakeBreak?: () => void;
   onEndInterview?: () => void;
   onRepeatQuestion?: () => void;
+  onReconnect?: () => void;
+  onResyncTranscript?: () => void;
 }
 
 export function ControllerDock({
@@ -66,7 +68,9 @@ export function ControllerDock({
   speakers = [],
   onTakeBreak,
   onEndInterview,
-  onRepeatQuestion
+  onRepeatQuestion,
+  onReconnect,
+  onResyncTranscript
 }: InterviewDockProps) {
   return (
     <div className="absolute bottom-8 left-0 right-0 z-20 flex justify-center pb-safe pointer-events-none">
@@ -206,10 +210,10 @@ export function ControllerDock({
 
             <DropdownMenuSeparator className="bg-border" />
 
-            <DropdownMenuItem className="focus:bg-accent focus:text-accent-foreground cursor-pointer">
+            <DropdownMenuItem onClick={onReconnect} className="focus:bg-accent focus:text-accent-foreground cursor-pointer">
               <RefreshCw className="mr-2 h-4 w-4" /> Reconnect
             </DropdownMenuItem>
-            <DropdownMenuItem className="focus:bg-accent focus:text-accent-foreground cursor-pointer">
+            <DropdownMenuItem onClick={onResyncTranscript} className="focus:bg-accent focus:text-accent-foreground cursor-pointer">
               <Activity className="mr-2 h-4 w-4" /> Re-sync transcript
             </DropdownMenuItem>
             <DropdownMenuItem onClick={onRepeatQuestion} className="focus:bg-accent focus:text-accent-foreground cursor-pointer">

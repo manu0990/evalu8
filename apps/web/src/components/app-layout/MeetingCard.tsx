@@ -225,7 +225,7 @@ export function MeetingCard({ meeting, onDelete, onStatusChange }: MeetingCardPr
           <div className="space-y-1">
             <div className="flex items-center space-x-2">
               <Building2 className="h-4 w-4 text-muted-foreground" />
-              <h3 className="font-semibold text-lg">{meeting.companyName}</h3>
+              <h3 className="font-semibold text-lg line-clamp-1">{meeting.companyName}</h3>
               {meeting.companyWebsite && (
                 <Button
                   variant="ghost"
@@ -242,7 +242,7 @@ export function MeetingCard({ meeting, onDelete, onStatusChange }: MeetingCardPr
                 </Button>
               )}
             </div>
-            <p className="text-sm font-medium text-primary">{meeting.roleToApply}</p>
+            <p className="text-sm font-medium text-primary line-clamp-1">{meeting.roleToApply}</p>
           </div>
 
           <div className="flex items-center space-x-2">
