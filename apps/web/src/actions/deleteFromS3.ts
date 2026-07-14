@@ -2,7 +2,7 @@
 
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions"
-import { type ActionResponse } from "./getSignedUrl";
+import { type ActionResponse } from "./createMeeting";
 import { DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { s3 } from "@/lib/s3Client";
 

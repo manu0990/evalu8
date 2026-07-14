@@ -63,15 +63,21 @@ export async function createMeeting(input: CreateMeetingInput): Promise<ActionRe
 
     // save meeting to database immediately with PENDING status
     const meeting = await prisma.$transaction(async (tx) => {
-      // create resume record first
-      const newResume = await tx.resume.create({
-        data: {
-          userId,
-          name: input.resume.name,
-          size: input.resume.size,
-          s3Key: input.resume.key,
-        },
+      // find existing resume by s3Key, or create new if not found
+      let dbResume = await tx.resume.findFirst({
+        where: { s3Key: input.resume.key, userId }
       });
+
+      if (!dbResume) {
+        dbResume = await tx.resume.create({
+          data: {
+            userId,
+            name: input.resume.name,
+            size: input.resume.size,
+            s3Key: input.resume.key,
+          },
+        });
+      }
 
       // create meeting with PENDING status (blueprint not yet generated)
       const newMeeting = await tx.meeting.create({
@@ -82,7 +88,7 @@ export async function createMeeting(input: CreateMeetingInput): Promise<ActionRe
           roleToApply: input.roleToApply,
           requirements: input.requirements,
           status: "PENDING",
-          resumeId: newResume.id,
+          resumeId: dbResume.id,
         },
       });
 

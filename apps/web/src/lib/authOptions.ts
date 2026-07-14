@@ -33,6 +33,10 @@ export const authOptions: NextAuthOptions = {
           name: user.name,
           email: user.email,
           image: user.image ?? undefined,
+          isVerified: user.emailVerified !== null,
+          username: user.username,
+          bio: user.bio,
+          urls: user.urls,
         };
       },
     }),
@@ -54,15 +58,40 @@ export const authOptions: NextAuthOptions = {
   },
 
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
       if (user) {
         token.id = user.id;
         token.name = user.name;
         token.email = user.email;
         token.image = user.image;
-        const dbUser = await prisma.user.findUnique({ where: { id: user.id } });
-        token.isVerified = dbUser?.emailVerified !== null;
+        
+        // For OAuth, user is AdapterUser (full DB record). For Credentials, it's what authorize returns.
+        const u = user as typeof user & {
+          isVerified?: boolean;
+          emailVerified?: Date | null;
+          username?: string | null;
+          bio?: string | null;
+          urls?: string[];
+        };
+        token.isVerified = u.isVerified ?? u.emailVerified !== null;
+        token.username = u.username;
+        token.bio = u.bio;
+        token.urls = u.urls;
       } 
+
+      if (trigger === "update") {
+        const dbUser = await prisma.user.findUnique({ where: { id: token.id as string } });
+        if (dbUser) {
+          token.name = dbUser.name;
+          token.email = dbUser.email;
+          token.image = dbUser.image;
+          token.isVerified = dbUser.emailVerified !== null;
+          token.username = dbUser.username;
+          token.bio = dbUser.bio;
+          token.urls = dbUser.urls;
+        }
+      }
+
       return token;
     },
 
@@ -72,8 +101,10 @@ export const authOptions: NextAuthOptions = {
         session.user.name = token.name as string;
         session.user.email = token.email as string;
         session.user.image = token.image as string;
-        // Type assertion for extended user properties
-        (session.user as typeof session.user & { isVerified?: boolean }).isVerified = token.isVerified;
+        session.user.isVerified = token.isVerified;
+        session.user.username = token.username;
+        session.user.bio = token.bio;
+        session.user.urls = token.urls;
       }
       return session;
     },

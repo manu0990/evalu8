@@ -13,4 +13,4 @@ const geminiModel = genAI.getGenerativeModel({
   model: process.env.WEB_LLM_MODEL
 });
 
-export { genAI, geminiModel };
+export { geminiModel };

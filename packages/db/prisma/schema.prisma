@@ -14,6 +14,9 @@ model User {
   emailVerified DateTime? @map("email_verified")
   image         String?
   password      String?
+  username      String?   @unique
+  bio           String?
+  urls          String[]
 
   accounts  Account[]
   sessions  Session[]

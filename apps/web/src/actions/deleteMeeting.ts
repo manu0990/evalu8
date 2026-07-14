@@ -41,25 +41,35 @@ export async function deleteMeeting(meetingId: string): Promise<ActionResponse> 
       };
     }
 
-    // delete resume file from S3
-    if (meeting.resume?.s3Key) {
-      await deleteFromS3(meeting.resume.s3Key).catch((err) => {
-        console.error(`[deleteMeeting] Failed to delete S3 file:`, err);
-      });
-    }
+    // save resumeId for later check
+    const resumeIdToCheck = meeting.resumeId;
+    const resumeS3Key = meeting.resume?.s3Key;
 
     // delete meeting from DB (cascades to messages, blueprint, wsTickets)
     await prisma.meeting.delete({
       where: { id: meetingId },
     });
 
-    // delete the orphaned resume record
-    if (meeting.resumeId) {
-      await prisma.resume.delete({
-        where: { id: meeting.resumeId },
-      }).catch((err) => {
-        console.error(`[deleteMeeting] Failed to delete resume record:`, err);
+    // check if any other meetings are using this resume
+    if (resumeIdToCheck) {
+      const remainingMeetingsCount = await prisma.meeting.count({
+        where: { resumeId: resumeIdToCheck },
       });
+
+      if (remainingMeetingsCount === 0) {
+        // No other meetings use this resume, it's safe to delete it
+        if (resumeS3Key) {
+          await deleteFromS3(resumeS3Key).catch((err) => {
+            console.error(`[deleteMeeting] Failed to delete S3 file:`, err);
+          });
+        }
+        
+        await prisma.resume.delete({
+          where: { id: resumeIdToCheck },
+        }).catch((err) => {
+          console.error(`[deleteMeeting] Failed to delete resume record:`, err);
+        });
+      }
     }
 
     return {

@@ -8,12 +8,10 @@ import { CircularProgress } from '@/components/CircleProgressbar';
 import { Card, CardHeader, CardContent, CardFooter, Button, Input, Textarea, Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@repo/ui";
 import { Building2, FileText, Link, Briefcase, FileCheck, Trash, Paperclip } from "lucide-react";
 import { toast } from 'sonner';
-import { getSignedUrl } from '@/actions/getSignedUrl';
 import { createMeeting } from '@/actions/createMeeting';
-import { deleteFromS3 } from '@/actions/deleteFromS3';
-import axios, { AxiosProgressEvent } from 'axios';
 import { cn } from '@/lib/utils';
 import { newMeetingFormSchema, type newMeetingFormTypes } from '@/lib/validation/meeting';
+import { useResumeUpload } from '@/hooks/useResumeUpload';
 
 
 export function NewMeetingForm({ onCancel, onSuccess }: { onCancel: () => void; onSuccess?: () => void }) {
@@ -31,59 +29,21 @@ export function NewMeetingForm({ onCancel, onSuccess }: { onCancel: () => void; 
 
   const [dragActive, setDragActive] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isUploading, setUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
+  const { isUploading, uploadProgress, uploadResume } = useResumeUpload();
 
   const resume = form.watch("resume");
   const isFormValid = Boolean(resume.key && form.watch("companyName") && form.watch("roleToApply") && form.watch("requirements"));
 
-  const resetUploadState = useCallback(() => {
-    setUploading(false);
-    setUploadProgress(0);
-  }, []);
-
   const handleResumeUpload = useCallback(
     async (file: File) => {
-      if (file.type !== 'application/pdf') return toast.warning("Only PDF files are allowed");
-      if (file.size > 10 * 1024 * 1024) return toast.warning("File size must be under 10MB");
-
       form.setValue('resume', { name: file.name, size: file.size, key: '' });
-
-      try {
-        setUploading(true);
-
-        const signed = await getSignedUrl(file.size);
-        if (!signed.success || !signed.data) {
-          toast.error(signed.error || "Failed to get upload URL");
-          return resetUploadState();
-        }
-
-        const { url, key } = signed.data;
-
-        const uploadResponse = await axios.put(url, file, {
-          headers: { 'Content-Type': 'application/pdf' },
-          onUploadProgress: (e: AxiosProgressEvent) => {
-            const total = e.total ?? file.size;
-            setUploadProgress(Math.round((e.loaded / total) * 100));
-          }
-        });
-
-        if (uploadResponse.status !== 200) {
-          toast.error("Failed to upload resume");
-          return resetUploadState();
-        }
-
-        form.setValue("resume.key", key);
-        toast.success("Resume uploaded successfully");
-      } catch (err) {
-        console.error("Upload error:", err);
-        toast.error("An error occurred during upload");
+      const uploadedResume = await uploadResume(file);
+      if (uploadedResume) {
+        form.setValue("resume.key", uploadedResume.s3Key);
+      } else {
         form.setValue("resume", { name: '', size: 0, key: '' });
-      } finally {
-        setUploading(false);
-        setUploadProgress(0);
       }
-    }, [form, resetUploadState]);
+    }, [form, uploadResume]);
 
   const onFileDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -100,18 +60,7 @@ export function NewMeetingForm({ onCancel, onSuccess }: { onCancel: () => void; 
   }, [handleResumeUpload]);
 
   const removeFile = async () => {
-    const currentKey = resume.key;
-
-    // Clear form immediately for better UX
     form.setValue("resume", { name: '', key: '', size: 0 });
-
-    // Delete from S3 if there's a key
-    if (currentKey) {
-      const result = await deleteFromS3(currentKey);
-      if (result.success) {
-        toast.success("File removed");
-      }
-    }
   };
 
   const handleSubmit = async (data: newMeetingFormTypes) => {
@@ -243,9 +192,11 @@ export function NewMeetingForm({ onCancel, onSuccess }: { onCancel: () => void; 
 
               {/* Resume Upload */}
               <section className="space-y-4">
-                <div className="flex items-center space-x-2 text-lg font-semibold">
-                  <FileText className="h-5 w-5" />
-                  <span>Resume <span className='text-destructive'>*</span></span>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2 text-lg font-semibold">
+                    <FileText className="h-5 w-5" />
+                    <span>Resume <span className='text-destructive'>*</span></span>
+                  </div>
                 </div>
 
                 <Input type="file" accept="application/pdf" className="hidden" id="resume-input" onChange={onFileSelect} />

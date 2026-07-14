@@ -14,5 +14,5 @@ export const newMeetingFormSchema = z.object({
   resume: resumeMetaSchema,
 });
 
-export type resumeMetaSchema = z.infer<typeof resumeMetaSchema>;
+
 export type newMeetingFormTypes = z.infer<typeof newMeetingFormSchema>;

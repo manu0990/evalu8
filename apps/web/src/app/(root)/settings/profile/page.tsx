@@ -1,31 +1,51 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { Button, Input, Label, Textarea } from '@repo/ui';
 import { toast } from 'sonner';
 import { Loader2, User, Link2 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
+import axios from 'axios';
+import { getUploadSignedUrl } from '@/actions/getUploadSignedUrl';
+import { updateProfile } from '@/actions/updateProfile';
 
 export default function ProfilePage() {
-  const { data: session } = useSession();
+  const { data: session, update: updateSession } = useSession();
   const [isLoading, setIsLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [urls, setUrls] = useState<string[]>(['manab.me']);
+  const [urls, setUrls] = useState<string[]>([]);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
-    username: '@new_user',     // session.user.username
-    name: session?.user.name || "User",
-    email: session?.user?.email || 'user@evalu8.com',
-    image: session?.user.image || null,
-    bio: 'Building Projects | Little bit DSA | Web Dev',  // session.user.bio
+    username: '',
+    name: '',
+    email: '',
+    image: '',
+    bio: '',
   });
 
+  useEffect(() => {
+    if (session?.user) {
+      setFormData({
+        username: session.user.username || '',
+        name: session.user.name || '',
+        email: session.user.email || '',
+        image: session.user.image || '',
+        bio: session.user.bio || '',
+      });
+      setUrls(session.user.urls?.length ? session.user.urls : []);
+    }
+  }, [session]);
+
   const handleAddUrl = () => {
-    setUrls([...urls, '']);
+    if (urls.length < 5) {
+      setUrls([...urls, '']);
+    } else {
+      toast.warning('Maximum 5 URLs allowed');
+    }
   };
 
   const handleUrlChange = (index: number, value: string) => {
@@ -36,7 +56,7 @@ export default function ProfilePage() {
 
   const handleRemoveUrl = (index: number) => {
     const newUrls = urls.filter((_, i) => i !== index);
-    setUrls(newUrls.length > 0 ? newUrls : ['']);
+    setUrls(newUrls);
   };
 
   const handleImageClick = () => {
@@ -46,21 +66,19 @@ export default function ProfilePage() {
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Validate file type
       if (!file.type.startsWith('image/')) {
         toast.error('Please select an image file');
         return;
       }
-
-      // Validate file size (max 5MB)
+      if (file.type === 'image/gif') {
+        toast.error('GIF images are not supported');
+        return;
+      }
       if (file.size > 5 * 1024 * 1024) {
         toast.error('Image size should be less than 5MB');
         return;
       }
-
       setImageFile(file);
-
-      // Create preview URL
       const reader = new FileReader();
       reader.onloadend = () => {
         setFormData({ ...formData, image: reader.result as string });
@@ -74,20 +92,56 @@ export default function ProfilePage() {
     setIsLoading(true);
 
     try {
-      // TODO: Upload image to server/storage if imageFile exists
-      if (imageFile) {
-        // const formData = new FormData();
-        // formData.append('image', imageFile);
-        // await uploadProfileImage(formData);
-        console.log('Image to upload:', imageFile);
+      if (formData.username.startsWith('@')) {
+        toast.error("Username cannot start with '@'");
+        setIsLoading(false);
+        return;
       }
 
-      // Simulate API call for profile update
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      let finalImageUrl = formData.image;
+
+      if (imageFile) {
+        if (imageFile.type === 'image/gif') {
+          throw new Error('GIF images are not supported');
+        }
+        const signed = await getUploadSignedUrl({
+          fileType: imageFile.type,
+          fileSize: imageFile.size,
+          purpose: 'profile_pic',
+        });
+        if (!signed.success || !signed.data) {
+          throw new Error(signed.error || 'Failed to get upload URL');
+        }
+        const { url, publicUrl } = signed.data;
+        await axios.put(url, imageFile, {
+          headers: { 'Content-Type': imageFile.type },
+        });
+        
+        finalImageUrl = publicUrl;
+      }
+
+      // Ensure max 5 unique URLs, filter out empties
+      const validUrls = Array.from(new Set(urls.filter(u => u.trim()))).slice(0, 5);
+
+      const result = await updateProfile({
+        name: formData.name,
+        username: formData.username,
+        bio: formData.bio,
+        urls: validUrls,
+        image: finalImageUrl,
+      });
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to update profile');
+      }
+
+      await updateSession();
+      setUrls(validUrls);
       toast.success('Profile updated successfully');
       setIsEditing(false);
-    } catch {
-      toast.error('Failed to update profile');
+    } catch (err) {
+      console.error(err);
+      toast.error(err instanceof Error ? err.message : 'Failed to update profile');
     } finally {
       setIsLoading(false);
     }
@@ -106,7 +160,6 @@ export default function ProfilePage() {
 
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-6">
-              {/* Large Profile Image */}
               <div className="relative">
                 {formData.image ? (
                   <Image
@@ -124,7 +177,6 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            {/* Edit Profile Button */}
             <Button
               variant="outline"
               size="sm"
@@ -135,27 +187,26 @@ export default function ProfilePage() {
             </Button>
           </div>
 
-          {/* Profile Info */}
           <div className="space-y-2 pl-1">
             <div>
-              <p className="text-sm text-muted-foreground">{formData.username}</p>
+              {formData.username && <p className="text-sm text-muted-foreground">@{formData.username}</p>}
               <h2 className="text-2xl font-semibold mt-1">{formData.name}</h2>
             </div>
             <p className="text-muted-foreground">{formData.email}</p>
-            <p className="text-foreground pt-2">{formData.bio}</p>
+            {formData.bio && <p className="text-foreground pt-2 whitespace-pre-wrap">{formData.bio}</p>}
 
-            {urls.some(url => url) && (
-              <div className="flex flex-wrap items-center gap-3 pt-2">
-                {urls.filter(url => url).map((url, index) => (
+            {urls.length > 0 && (
+              <div className="flex flex-col gap-2 pt-2 max-w-sm">
+                {urls.map((url, index) => (
                   <Link
                     key={index}
                     href={url.startsWith('http') ? url : `https://${url}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-blue-500 hover:underline"
+                    className="inline-flex items-center gap-2 text-blue-500 hover:underline w-full"
                   >
-                    <Link2 className="h-4 w-4 text-primary/40 rotate-135" />
-                    <span>{url}</span>
+                    <Link2 className="h-4 w-4 text-primary/40 shrink-0" />
+                    <span className="truncate block">{url}</span>
                   </Link>
                 ))}
               </div>
@@ -169,11 +220,9 @@ export default function ProfilePage() {
   return (
     <div className="max-w-2xl">
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Profile Image Section */}
         <div className="space-y-2">
           <Label>Profile Photo</Label>
           <div className="flex items-center gap-6">
-            {/* Profile Image Display */}
             <div className="relative cursor-pointer" onClick={handleImageClick}>
               {formData.image ? (
                 <div className="relative group">
@@ -194,8 +243,6 @@ export default function ProfilePage() {
                 </div>
               )}
             </div>
-
-            {/* Upload Info */}
             <div className="flex flex-col gap-1">
               <input
                 ref={fileInputRef}
@@ -221,7 +268,7 @@ export default function ProfilePage() {
             id="username"
             value={formData.username}
             onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-            placeholder="@username"
+            placeholder="username"
           />
         </div>
 
@@ -232,6 +279,7 @@ export default function ProfilePage() {
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
             placeholder="Your full name"
+            required
           />
         </div>
 
@@ -241,9 +289,8 @@ export default function ProfilePage() {
             id="email"
             type="email"
             value={formData.email}
-            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-            placeholder="your.email@example.com"
             disabled
+            className="bg-muted"
           />
           <p className="text-xs text-muted-foreground">
             Email cannot be changed. Contact support if you need to update it.
@@ -257,14 +304,14 @@ export default function ProfilePage() {
             value={formData.bio}
             onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
             placeholder="Tell us a little bit about yourself"
-            rows={3}
+            rows={4}
           />
         </div>
 
         <div className="space-y-2">
           <Label>URLs</Label>
           <p className="text-xs text-muted-foreground mb-2">
-            Add links to your website, blog, or social media profiles.
+            Add links to your website, blog, or social media profiles. (Max 5)
           </p>
           <div className="space-y-2">
             {urls.map((url, index) => (
@@ -275,26 +322,26 @@ export default function ProfilePage() {
                   placeholder={`https://example.com`}
                   className="flex-1"
                 />
-                {urls.length > 1 && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleRemoveUrl(index)}
-                  >
-                    Remove
-                  </Button>
-                )}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleRemoveUrl(index)}
+                >
+                  Remove
+                </Button>
               </div>
             ))}
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={handleAddUrl}
-            >
-              Add URL
-            </Button>
+            {urls.length < 5 && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleAddUrl}
+              >
+                Add URL
+              </Button>
+            )}
           </div>
         </div>
 

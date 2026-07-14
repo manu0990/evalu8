@@ -1,23 +1,24 @@
 'use client';
 
 import { toast } from 'sonner';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import { Loader2, Trash2, AlertTriangle, FileText, Eye } from 'lucide-react';
-import { Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@repo/ui';
+import { Loader2, AlertTriangle, FileText, Eye } from 'lucide-react';
+import { Button, Input, Label, AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@repo/ui';
+import type { Resume } from '@repo/db';
+import { getResumes } from '@/actions/getResumes';
+import { getResumeDownloadUrl } from '@/actions/getResumeDownloadUrl';
+import { checkUserAuthType } from '@/actions/checkUserAuthType';
+import { resetProgressAction } from '@/actions/resetProgressAction';
+import { deleteAccountAction } from '@/actions/deleteAccountAction';
+import { signOut } from 'next-auth/react';
 
 export default function AccountPage() {
   const { data: session } = useSession();
   const [isLoading, setIsLoading] = useState(false);
   const [showPasswordForm, setShowPasswordForm] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
-  const [isResettingProgress, setIsResettingProgress] = useState(false);
-  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
-
-  const [formData, setFormData] = useState({
-    name: session?.user.name || '',
-    language: 'en',
-  });
+  const [hasPassword, setHasPassword] = useState(false);
 
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
@@ -25,11 +26,29 @@ export default function AccountPage() {
     confirmPassword: '',
   });
 
-  // Mock resumes data - replace with actual data from API
-  const [resumes, setResumes] = useState([
-    { id: '1', name: 'Resume_2024.pdf', uploadDate: '2024-10-15' },
-    { id: '2', name: 'CV_Updated.pdf', uploadDate: '2024-10-20' },
-  ]);
+  const [resumes, setResumes] = useState<Resume[]>([]);
+
+  // Destructive Actions states
+  const [resetConfirmText, setResetConfirmText] = useState('');
+  const [isResettingProgress, setIsResettingProgress] = useState(false);
+  
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const authRes = await checkUserAuthType();
+      if (authRes.success && authRes.data) {
+        setHasPassword(authRes.data.hasPassword);
+      }
+
+      const resumesRes = await getResumes();
+      if (resumesRes.success && resumesRes.data) {
+        setResumes(resumesRes.data);
+      }
+    };
+    fetchData();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,51 +93,44 @@ export default function AccountPage() {
     }
   };
 
-  const handleDeleteResume = async (resumeId: string) => {
+  const handleViewResume = async (resumeId: string) => {
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 500));
-      setResumes(resumes.filter(r => r.id !== resumeId));
-      toast.success('Resume deleted successfully');
+      const res = await getResumeDownloadUrl(resumeId);
+      if (res.success && res.data) {
+        window.open(res.data.url, '_blank');
+      } else {
+        toast.error(res.error || "Failed to view resume");
+      }
     } catch {
-      toast.error('Failed to delete resume');
-    }
-  };
-
-  const handleViewResume = (resumeId: string) => {
-    // In production, this would open the actual resume URL
-    const resume = resumes.find(r => r.id === resumeId);
-    if (resume) {
-      toast.info(`Opening ${resume.name}...`);
-      // window.open(`/api/resumes/${resumeId}`, '_blank');
+      toast.error("Failed to view resume");
     }
   };
 
   const handleResetProgress = async () => {
+    if (resetConfirmText.toLowerCase() !== 'reset my progress') return;
     setIsResettingProgress(true);
-
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const res = await resetProgressAction();
+      if (!res.success) throw new Error(res.error || 'Failed to reset progress');
       toast.success('Progress reset successfully');
-    } catch {
-      toast.error('Failed to reset progress');
+      setResetConfirmText('');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to reset progress');
     } finally {
       setIsResettingProgress(false);
     }
   };
 
   const handleDeleteAccount = async () => {
+    if (deleteConfirmText.toLowerCase() !== 'delete my account') return;
     setIsDeletingAccount(true);
-
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const res = await deleteAccountAction();
+      if (!res.success) throw new Error(res.error || 'Failed to delete account');
       toast.success('Account deleted successfully');
-      // Redirect to home page or sign out
-      // signOut({ callbackUrl: '/' });
-    } catch {
-      toast.error('Failed to delete account');
+      signOut({ callbackUrl: '/' });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to delete account');
     } finally {
       setIsDeletingAccount(false);
     }
@@ -137,16 +149,6 @@ export default function AccountPage() {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="name">Name</Label>
-            <Input
-              id="name"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              placeholder="Your name"
-            />
-          </div>
-
-          <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input
               id="email"
@@ -160,25 +162,6 @@ export default function AccountPage() {
             </p>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="language">Language</Label>
-            <Select
-              value={formData.language}
-              onValueChange={(value) => setFormData({ ...formData, language: value })}
-            >
-              <SelectTrigger id="language">
-                <SelectValue placeholder="Select language" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="en">English</SelectItem>
-                <SelectItem value="es">Spanish</SelectItem>
-                <SelectItem value="fr">French</SelectItem>
-                <SelectItem value="de">German</SelectItem>
-                <SelectItem value="zh">Chinese</SelectItem>
-                <SelectItem value="ja">Japanese</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
 
           <div className="flex gap-3">
             <Button type="submit" disabled={isLoading} className="cursor-pointer">
@@ -186,19 +169,21 @@ export default function AccountPage() {
               Save Changes
             </Button>
 
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setShowPasswordForm(!showPasswordForm)}
-              className="cursor-pointer"
-            >
-              Change Password
-            </Button>
+            {hasPassword && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowPasswordForm(!showPasswordForm)}
+                className="cursor-pointer"
+              >
+                Change Password
+              </Button>
+            )}
           </div>
         </form>
 
         {/* Password Change Form - Inline */}
-        {showPasswordForm && (
+        {showPasswordForm && hasPassword && (
           <form onSubmit={handlePasswordChange} className="space-y-4 p-4 border rounded-lg bg-muted/50">
             <div className="space-y-2">
               <Label htmlFor="current-password">Current Password</Label>
@@ -259,12 +244,14 @@ export default function AccountPage() {
       </div>
 
       {/* Resumes */}
-      <div className="space-y-4 pt-6 border-t">
-        <div>
-          <h3 className="text-lg font-medium">Uploaded Resumes</h3>
-          <p className="text-sm text-muted-foreground">
-            Manage your uploaded resumes.
-          </p>
+      <div className="space-y-4 pt-6 border-t max-w-2xl">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-medium">Your Resumes</h3>
+            <p className="text-sm text-muted-foreground">
+              {resumes.length} {resumes.length === 1 ? 'Resume' : 'Resumes'} Uploaded
+            </p>
+          </div>
         </div>
 
         <div className="space-y-2">
@@ -274,37 +261,26 @@ export default function AccountPage() {
             resumes.map((resume) => (
               <div
                 key={resume.id}
-                className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors"
+                className="flex items-center justify-between p-3 border border-accent rounded-lg hover:bg-muted/50 transition-colors"
               >
                 <div className="flex items-center gap-3">
-                  <FileText className="h-4 w-4 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm font-medium">{resume.name}</p>
+                  <FileText className="h-5 w-5 text-primary shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium truncate">{resume.name}</p>
                     <p className="text-xs text-muted-foreground">
-                      {new Date(resume.uploadDate).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: '2-digit',
-                        day: '2-digit'
-                      })}
+                      {(resume.size / 1024 / 1024).toFixed(2)} MB
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1 shrink-0 ml-4">
                   <Button
+                    title="View"
                     variant="ghost"
-                    size="sm"
+                    size="icon"
                     onClick={() => handleViewResume(resume.id)}
                     className="hover:bg-muted cursor-pointer"
                   >
                     <Eye className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleDeleteResume(resume.id)}
-                    className="text-destructive hover:text-destructive hover:bg-destructive/10 cursor-pointer"
-                  >
-                    <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
@@ -314,7 +290,7 @@ export default function AccountPage() {
       </div>
 
       {/* Danger Zone */}
-      <div className="space-y-4 pt-6 border-t border-destructive/30">
+      <div className="space-y-4 pt-6 border-t border-destructive/30 max-w-2xl">
         <div>
           <h3 className="text-lg font-medium text-destructive">Danger Zone</h3>
           <p className="text-sm text-muted-foreground">
@@ -339,10 +315,9 @@ export default function AccountPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  disabled={isResettingProgress}
                   className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground shrink-0 cursor-pointer"
                 >
-                  {isResettingProgress ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Reset'}
+                  Reset
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
@@ -351,15 +326,25 @@ export default function AccountPage() {
                   <AlertDialogDescription>
                     This will permanently reset all your interview progress, scores, and analytics.
                     This action cannot be undone.
+                    <br/><br/>
+                    Please type <strong>reset my progress</strong> to confirm.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
+                <div className="my-2">
+                  <Input 
+                    value={resetConfirmText} 
+                    onChange={e => setResetConfirmText(e.target.value)} 
+                    placeholder="reset my progress"
+                  />
+                </div>
                 <AlertDialogFooter>
-                  <AlertDialogCancel className="cursor-pointer">Cancel</AlertDialogCancel>
+                  <AlertDialogCancel onClick={() => setResetConfirmText('')}>Cancel</AlertDialogCancel>
                   <AlertDialogAction
                     onClick={handleResetProgress}
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90 cursor-pointer"
+                    disabled={resetConfirmText.toLowerCase() !== 'reset my progress' || isResettingProgress}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90 cursor-pointer disabled:opacity-50"
                   >
-                    Reset Progress
+                    {isResettingProgress ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Reset Progress'}
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
@@ -382,10 +367,9 @@ export default function AccountPage() {
                 <Button
                   variant="destructive"
                   size="sm"
-                  disabled={isDeletingAccount}
                   className="shrink-0 cursor-pointer"
                 >
-                  {isDeletingAccount ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Delete'}
+                  Delete
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
@@ -393,7 +377,7 @@ export default function AccountPage() {
                   <AlertDialogTitle>Delete Account Permanently?</AlertDialogTitle>
                   <AlertDialogDescription>
                     This will permanently delete your account and all associated data including:
-                    <ul className="list-disc list-inside mt-2 space-y-1">
+                    <ul className="list-disc list-inside mt-2 space-y-1 text-left text-foreground">
                       <li>All interview recordings and transcripts</li>
                       <li>Progress and analytics data</li>
                       <li>Uploaded resumes</li>
@@ -402,15 +386,26 @@ export default function AccountPage() {
                     <p className="mt-3 font-semibold text-destructive">
                       This action cannot be undone.
                     </p>
+                    <p className="mt-2 text-foreground">
+                      Please type <strong>delete my account</strong> to confirm.
+                    </p>
                   </AlertDialogDescription>
                 </AlertDialogHeader>
+                <div className="my-2">
+                  <Input 
+                    value={deleteConfirmText} 
+                    onChange={e => setDeleteConfirmText(e.target.value)} 
+                    placeholder="delete my account"
+                  />
+                </div>
                 <AlertDialogFooter>
-                  <AlertDialogCancel className="cursor-pointer">Cancel</AlertDialogCancel>
+                  <AlertDialogCancel onClick={() => setDeleteConfirmText('')}>Cancel</AlertDialogCancel>
                   <AlertDialogAction
                     onClick={handleDeleteAccount}
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90 cursor-pointer"
+                    disabled={deleteConfirmText.toLowerCase() !== 'delete my account' || isDeletingAccount}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90 cursor-pointer disabled:opacity-50"
                   >
-                    Delete Account
+                    {isDeletingAccount ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Delete Account'}
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
