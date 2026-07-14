@@ -7,7 +7,7 @@ import { config } from "./ws-env.config";
 import { prisma } from "@repo/db";
 import { TTSService } from "./services/ttsService";
 import { STTService } from "./services/sttService";
-
+import { buildSystemPrompt } from "./lib/system-prompt";
 import { PrismaType } from "@repo/db";
 
 type MeetingWithRelations = PrismaType.MeetingGetPayload<{
@@ -249,31 +249,21 @@ export function startWebSocketServer() {
           else conversation.addAssistantMessage(msg.content);
         });
 
-        systemInstruction = [
-          `You are Evalu8, a professional and friendly AI interviewer conducting a mock interview.`,
-          ``,
-          `## Interview Context`,
-          `- **Company**: ${meeting.companyName}${meeting.companyWebsite ? ` (${meeting.companyWebsite})` : ""}`,
-          `- **Role**: ${meeting.roleToApply}`,
-          `- **Job Requirements**: ${meeting.requirements}`,
-          ``,
-          `## Your Behavior`,
-          `- Start the conversation with a warm, professional greeting. Introduce yourself briefly, mention the company and role, and ask an easy opening question (e.g. "Tell me a little about yourself and what drew you to this role").`,
-          `- Ask one question at a time. Wait for the candidate's response before moving on.`,
-          `- Adapt follow-up questions based on the candidate's answers.`,
-          `- Cover a mix of behavioral, technical, and situational questions relevant to the role and requirements.`,
-          `- Be encouraging but professional. Keep your responses concise.`,
-          `- Keep each turn to 1-3 short sentences unless the candidate asks for detail.`,
-          `- Do not repeat your greeting once the interview has started.`,
-          `- Do not mention that you cannot access a PDF. Use the resume/interviewer notes below as your resume context.`,
-          `- Do NOT use markdown formatting or JSON in your responses. Speak naturally as you would in a real interview.`,
-          `- If the candidate asks to end the interview early, or if you have asked around ${meeting.interviewBlueprint?.totalQuestions || 5} questions and feel it has naturally concluded, you MUST call the end_interview tool to finish the session.`,
-          `- IMPORTANT: Before calling the end_interview tool, you MUST output a proper, polite goodbye message in your text response. If the candidate ends it midway, acknowledge it politely. If it's a natural conclusion, provide typical end-of-interview closing remarks and tell the analysis will be available shortly. Do not call the tool silently!`,
-          `- Resume file: ${meeting.resume?.name || "not available"}`,
-          meeting.interviewBlueprint
-            ? `\n## Interview Blueprint\n- Total questions planned: ${meeting.interviewBlueprint.totalQuestions}\n- Categories: ${JSON.stringify(meeting.interviewBlueprint.categories)}\n- Rationale: ${meeting.interviewBlueprint.rationale}\n- Interviewer notes from resume analysis: ${meeting.interviewBlueprint.initialNotes}`
-            : "",
-        ].join("\n");
+        systemInstruction = buildSystemPrompt({
+          companyName: meeting.companyName,
+          companyWebsite: meeting.companyWebsite,
+          roleToApply: meeting.roleToApply,
+          requirements: meeting.requirements,
+          resumeName: meeting.resume?.name || null,
+          blueprint: meeting.interviewBlueprint
+            ? {
+                totalQuestions: meeting.interviewBlueprint.totalQuestions,
+                categories: meeting.interviewBlueprint.categories as unknown,
+                rationale: meeting.interviewBlueprint.rationale,
+                initialNotes: meeting.interviewBlueprint.initialNotes,
+              }
+            : null,
+        });
       }
     } catch (err) {
       console.error("Failed to fetch meeting details:", err);
@@ -423,7 +413,7 @@ export function startWebSocketServer() {
       }
 
       if (assistantResponse.trim()) {
-        conversation.addAssistantMessage(assistantResponse);
+        conversation.addAssistantMessage(assistantResponse.trim());
         lastAiMessage = assistantResponse.trim();
       }
 
@@ -439,8 +429,11 @@ export function startWebSocketServer() {
     // ── Send introductory greeting on connect ──
     try {
       if (conversation.getHistory().length) {
-        // Seed the conversation with a prompt that triggers the AI to resume
+        // Resumed interview: seed the conversation with a prompt that triggers the AI to resume
         conversation.addSystemMessage("The candidate has returned from a short break. Please warmly welcome them back and resume the interview exactly where you left off. Ask your next question.");
+      } else {
+        // Fresh interview: seed the conversation so the AI opens with a proper interview greeting
+        conversation.addUserMessage("Hello, I'm ready for the interview.");
       }
 
       isAiSpeaking = true;
