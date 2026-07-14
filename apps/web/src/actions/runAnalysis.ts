@@ -3,7 +3,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
 import { prisma } from "@repo/db";
-import { geminiModel } from "@/lib/geminiClient";
+import { getGeminiModel } from "@/lib/geminiClient";
 import { getResumeBufferFromS3 } from "@/lib/s3ResumeReader";
 import { interviewAnalysisPrompt, resumeAnalysisPrompt } from "@/lib/prompts/analysisPrompts";
 
@@ -40,7 +40,7 @@ export interface ResumeAnalysisFeedback {
 export interface AnalysisResult {
   id: string;
   type: 'INTERVIEW_ANALYSIS' | 'RESUME_ANALYSIS';
-  status: 'COMPLETED' | 'FAILED';
+  status: 'COMPLETED' | 'FAILED' | 'PROCESSING';
   score: number | null;
   feedback: InterviewAnalysisFeedback | ResumeAnalysisFeedback | null;
 }
@@ -76,9 +76,8 @@ async function verifyAndInitializeAnalysis(meetingId: string, type: 'INTERVIEW_A
     if (existingAnalysis.status === 'COMPLETED') {
       throw new Error("Analysis already completed. Re-runs are not allowed.");
     }
-    if (existingAnalysis.status === 'PROCESSING') {
-      throw new Error("Analysis is already in progress.");
-    }
+    // If it's 'PROCESSING', it might be stuck from a previous crash.
+    // We allow it to be overridden and re-run.
   }
 
   const analysis = await prisma.analysis.upsert({
@@ -119,7 +118,7 @@ export async function runInterviewAnalysis(meetingId: string): Promise<ActionRes
       meeting.companyName
     );
 
-    const result = await geminiModel.generateContent([{ text: systemPrompt }]);
+    const result = await getGeminiModel().generateContent([{ text: systemPrompt }]);
     const parsedData = parseGeminiResponse(result.response.text());
 
     // Update Analysis to COMPLETED
@@ -178,7 +177,7 @@ export async function runResumeAnalysis(meetingId: string): Promise<ActionRespon
       meeting.companyName
     );
 
-    const result = await geminiModel.generateContent([
+    const result = await getGeminiModel().generateContent([
       { inlineData: { data: resumeBase64, mimeType: "application/pdf" } },
       { text: systemPrompt }
     ]);

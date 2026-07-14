@@ -1,6 +1,6 @@
 "use server";
 
-import { geminiModel } from "@/lib/geminiClient";
+import { getGeminiModel } from "@/lib/geminiClient";
 import { blueprintPrompt } from "@/lib/prompts/blueprintPrompt";
 import { getResumeBufferFromS3 } from "@/lib/s3ResumeReader";
 
@@ -36,7 +36,7 @@ export async function generateBlueprint(
     );
 
     // call Gemini AI with the resume PDF and prompt
-    const result = await geminiModel.generateContent([
+    const result = await getGeminiModel().generateContent([
       {
         inlineData: {
           data: resume,

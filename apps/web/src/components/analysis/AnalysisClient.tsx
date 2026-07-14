@@ -17,15 +17,23 @@ interface AnalysisClientProps {
 export function AnalysisClient({ meeting, initialAnalyses }: AnalysisClientProps) {
   const router = useRouter();
   
+  const getInitialStatus = (type: 'INTERVIEW_ANALYSIS' | 'RESUME_ANALYSIS') => {
+    const status = initialAnalyses.find(a => a.type === type)?.status.toLowerCase() as 'idle' | 'processing' | 'completed' | 'failed' | undefined;
+    // If the database has a stuck 'processing' state from a previous crash/timeout,
+    // we map it to 'idle' in the UI so the user can re-trigger it.
+    if (status === 'processing') return 'idle';
+    return status || 'idle';
+  };
+
   const [interviewStatus, setInterviewStatus] = useState<'idle' | 'processing' | 'completed' | 'failed'>(
-    (initialAnalyses.find(a => a.type === 'INTERVIEW_ANALYSIS')?.status.toLowerCase() as 'idle' | 'processing' | 'completed' | 'failed') || 'idle'
+    getInitialStatus('INTERVIEW_ANALYSIS')
   );
   const [interviewResult, setInterviewResult] = useState<AnalysisResult | undefined>(
     initialAnalyses.find(a => a.type === 'INTERVIEW_ANALYSIS')
   );
 
   const [resumeStatus, setResumeStatus] = useState<'idle' | 'processing' | 'completed' | 'failed'>(
-    (initialAnalyses.find(a => a.type === 'RESUME_ANALYSIS')?.status.toLowerCase() as 'idle' | 'processing' | 'completed' | 'failed') || 'idle'
+    getInitialStatus('RESUME_ANALYSIS')
   );
   const [resumeResult, setResumeResult] = useState<AnalysisResult | undefined>(
     initialAnalyses.find(a => a.type === 'RESUME_ANALYSIS')
@@ -34,45 +42,58 @@ export function AnalysisClient({ meeting, initialAnalyses }: AnalysisClientProps
   const [isRunningAll, setIsRunningAll] = useState(false);
 
   const handleRunInterview = async () => {
-    setInterviewStatus('processing');
-    const res = await runInterviewAnalysis(meeting.id);
-    if (res.success && res.data) {
-      setInterviewResult(res.data);
-      setInterviewStatus('completed');
-      toast.success("Interview analysis completed");
-    } else {
-      setInterviewResult({ id: '', type: 'INTERVIEW_ANALYSIS', status: 'FAILED', score: 0, feedback: null });
+    try {
+      setInterviewStatus('processing');
+      const res = await runInterviewAnalysis(meeting.id);
+      if (res.success && res.data) {
+        setInterviewResult(res.data);
+        setInterviewStatus('completed');
+        toast.success("Interview analysis completed");
+      } else {
+        setInterviewResult({ id: '', type: 'INTERVIEW_ANALYSIS', status: 'FAILED', score: 0, feedback: null });
+        setInterviewStatus('failed');
+        toast.error(res.error || "Failed to run interview analysis");
+      }
+    } catch (error) {
+      console.error(error);
       setInterviewStatus('failed');
-      toast.error(res.error || "Failed to run interview analysis");
+      toast.error("Network or server error during interview analysis");
     }
   };
 
   const handleRunResume = async () => {
-    setResumeStatus('processing');
-    const res = await runResumeAnalysis(meeting.id);
-    if (res.success && res.data) {
-      setResumeResult(res.data);
-      setResumeStatus('completed');
-      toast.success("Resume analysis completed");
-    } else {
-      setResumeResult({ id: '', type: 'RESUME_ANALYSIS', status: 'FAILED', score: 0, feedback: null });
+    try {
+      setResumeStatus('processing');
+      const res = await runResumeAnalysis(meeting.id);
+      if (res.success && res.data) {
+        setResumeResult(res.data);
+        setResumeStatus('completed');
+        toast.success("Resume analysis completed");
+      } else {
+        setResumeResult({ id: '', type: 'RESUME_ANALYSIS', status: 'FAILED', score: 0, feedback: null });
+        setResumeStatus('failed');
+        toast.error(res.error || "Failed to run resume analysis");
+      }
+    } catch (error) {
+      console.error(error);
       setResumeStatus('failed');
-      toast.error(res.error || "Failed to run resume analysis");
+      toast.error("Network or server error during resume analysis");
     }
   };
 
   const handleRunAll = async () => {
     setIsRunningAll(true);
+    try {
+      if (interviewStatus !== 'completed') {
+        await handleRunInterview();
+      }
 
-    if (interviewStatus !== 'completed') {
-      await handleRunInterview();
+      if (resumeStatus !== 'completed') {
+        await handleRunResume();
+      }
+    } finally {
+      setIsRunningAll(false);
     }
-
-    if (resumeStatus !== 'completed') {
-      await handleRunResume();
-    }
-
-    setIsRunningAll(false);
   };
 
   const isAnyRunning = interviewStatus === 'processing' || resumeStatus === 'processing' || isRunningAll;

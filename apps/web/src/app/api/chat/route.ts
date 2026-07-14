@@ -1,4 +1,4 @@
-import { geminiModel } from "@/lib/geminiClient";
+import { getGeminiModel } from "@/lib/geminiClient";
 
 export async function POST(req: Request) {
   try {
@@ -7,7 +7,7 @@ export async function POST(req: Request) {
       return new Response("Missing message", { status: 400 });
     }
 
-    const result = await geminiModel.generateContentStream(message);
+    const result = await getGeminiModel().generateContentStream(message);
 
     const stream = new ReadableStream({
       async start(controller) {

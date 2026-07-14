@@ -45,7 +45,7 @@ export async function getAnalyses(meetingId: string): Promise<ActionResponse<Ana
       return {
         id: analysis.id,
         type: analysis.type,
-        status: analysis.status as 'COMPLETED' | 'FAILED',
+        status: analysis.status as 'COMPLETED' | 'FAILED' | 'PROCESSING',
         score: analysis.score,
         feedback: feedback
       } as AnalysisResult;
