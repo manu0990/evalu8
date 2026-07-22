@@ -2,6 +2,7 @@
 
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
+import { after } from "next/server";
 import { prisma, PrismaType } from "@repo/db";
 import { generateBlueprint } from "./generateBlueprint";
 
@@ -97,15 +98,17 @@ export async function createMeeting(input: CreateMeetingInput): Promise<ActionRe
 
     console.log(`[createMeeting] Meeting created with ID: ${meeting.id}, generating blueprint in background...`);
 
-    // Fire-and-forget: generate blueprint in background
-    generateBlueprint(
-      input.resume.key,
-      input.companyName,
-      input.companyWebsite || null,
-      input.roleToApply,
-      input.requirements
-    )
-      .then(async (blueprintData) => {
+    // Use Next.js `after` to ensure Vercel doesn't kill the lambda before the background work finishes.
+    after(async () => {
+      try {
+        const blueprintData = await generateBlueprint(
+          input.resume.key,
+          input.companyName,
+          input.companyWebsite || null,
+          input.roleToApply,
+          input.requirements
+        );
+
         await prisma.interviewBlueprint.create({
           data: {
             meetingId: meeting.id,
@@ -120,8 +123,7 @@ export async function createMeeting(input: CreateMeetingInput): Promise<ActionRe
           data: { status: "QUESTIONNAIRE_READY" },
         });
         console.log(`[createMeeting] Blueprint generated and saved for meeting: ${meeting.id}`);
-      })
-      .catch(async (err) => {
+      } catch (err) {
         console.error(`[createMeeting] Background blueprint generation failed for meeting ${meeting.id}:`, err);
         await prisma.meeting.update({
           where: { id: meeting.id },
@@ -129,7 +131,8 @@ export async function createMeeting(input: CreateMeetingInput): Promise<ActionRe
         }).catch((updateErr) => {
           console.error(`[createMeeting] Failed to update meeting status to FAILED:`, updateErr);
         });
-      });
+      }
+    });
 
     return {
       success: true,
