@@ -159,12 +159,17 @@ Each package/app is 100% [TypeScript](https://www.typescriptlang.org/) with stri
 - **Tailwind CSS** 4.1.5 for styling
 - **shadcn/ui** - Custom component library built on Radix UI
 - **NextAuth.js** 4.24.11 for authentication
+- **AWS S3** - For secure resume storage
 
-### Backend
+### Backend & AI
 - **Node.js** WebSocket server
 - **ws** 8.18.3 for WebSocket communication
 - **PostgreSQL** database
 - **Prisma ORM** 6.13.0
+- **Google Gemini** - For resume analysis, blueprint generation, and feedback (Supports Key Rotation)
+- **Deepgram** - For real-time Speech-to-Text (STT) transcription
+- **Cartesia** - For low-latency Text-to-Speech (TTS) voice synthesis
+- **Groq / OpenAI API** - For high-speed conversational LLM during interviews
 
 ### Development Tools
 - **Turborepo** 2.5.6 for monorepo management
@@ -280,9 +285,10 @@ pnpm db:reset
          │   Next.js App │       │  WS Server  │
          │   (Port 3000) │       │ (Port 8080) │
          │               │       │             │
-         │ - App Router  │       │ - Real-time │
-         │ - NextAuth    │       │ - Sessions  │
-         │ - API Routes  │       │             │
+         │ - App Router  │       │ - Deepgram  │
+         │ - NextAuth    │       │ - Cartesia  │
+         │ - Gemini AI   │       │ - OpenAI/LLM│
+         │ - AWS S3      │       │             │
          └───────┬───────┘       └──────┬──────┘
                  │                      │
                  └───────────┬──────────┘
@@ -311,11 +317,13 @@ Shared Packages:
    - Server-side rendering and API routes
    - NextAuth.js for authentication
    - Communicates with PostgreSQL via Prisma
+   - Generates Mock Interview Blueprints and Analyses using **Google Gemini**
+   - securely uploads resumes directly to **AWS S3**
 
 2. **WebSocket Server** (`apps/ws-server`)
    - Real-time bidirectional communication
    - Handles live interview sessions
-   - Event-driven architecture
+   - Manages **Deepgram** (Real-time Speech-to-Text), **Cartesia** (Text-to-Speech), and an **OpenAI-compatible LLM** for the interviewer's brain.
 
 3. **Database Layer** (`packages/db`)
    - Prisma ORM for type-safe queries
@@ -346,11 +354,34 @@ GOOGLE_CLIENT_SECRET="your-google-client-secret"
 GITHUB_CLIENT_ID="your-github-client-id"
 GITHUB_CLIENT_SECRET="your-github-client-secret"
 
-# WebSocket Server
+# Web LLM (Gemini)
+# You can provide multiple keys separated by " ||| " for round-robin rotation!
+WEB_LLM_API_KEY="AIzaSy...key1 ||| AIzaSy...key2"
+WEB_LLM_MODEL="gemini-1.5-pro"
+
+# WebSocket Server (Realtime LLM)
 WS_PORT=8080
+WS_LLM_API_KEY="your-ws-llm-api-key"
+WS_LLM_BASE_URL="your-llm-base-url"
+WS_LLM_MODEL="your-ws-llm-model-name"
+WS_LLM_TEMPERATURE=0.7
+WS_LLM_MAX_TOKENS=2048
+
+# External AI Services (Audio)
+CARTESIA_API_KEY="your-cartesia-api-key"
+CARTESIA_VOICE_MODEL="your-cartesia-voice-model-id"
+DEEPGRAM_API_KEY="your-deepgram-api-key"
+DEEPGRAM_STT_MODEL_NAME="nova-3"
+
+# AWS S3 (Resumes)
+AWS_REGION="your-aws-region"
+AWS_S3_BUCKET_NAME="your-bucket-name"
+AWS_ACCESS_KEY_ID="your-access-key-id"
+AWS_SECRET_ACCESS_KEY="your-secret-access-key"
 
 # Environment
 NODE_ENV="development"
+NEXT_PUBLIC_WS_SERVER_URL="ws://localhost:8080"
 ```
 
 ### Required Environment Variables
@@ -360,12 +391,11 @@ NODE_ENV="development"
 | `DATABASE_URL` | PostgreSQL connection string | ✅ Yes |
 | `NEXTAUTH_SECRET` | Secret for NextAuth.js session encryption | ✅ Yes |
 | `NEXTAUTH_URL` | Base URL for NextAuth callbacks | ✅ Yes |
-| `GOOGLE_CLIENT_ID` | Google OAuth client ID | ⚠️ For Google login |
-| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret | ⚠️ For Google login |
-| `GITHUB_CLIENT_ID` | GitHub OAuth client ID | ⚠️ For GitHub login |
-| `GITHUB_CLIENT_SECRET` | GitHub OAuth client secret | ⚠️ For GitHub login |
-| `WS_PORT` | WebSocket server port | ✅ Yes |
-| `NODE_ENV` | Environment mode (development/production) | ✅ Yes |
+| `WEB_LLM_API_KEY` | Gemini API Key(s) (Split with `\|\|\|` for rotation) | ✅ Yes |
+| `WS_LLM_API_KEY` | LLM Key for WS-Server (e.g. Groq/OpenAI) | ✅ Yes |
+| `CARTESIA_API_KEY` | Cartesia TTS API Key | ✅ Yes |
+| `DEEPGRAM_API_KEY` | Deepgram STT API Key | ✅ Yes |
+| `AWS_S3_BUCKET_NAME` | AWS S3 Bucket Name | ✅ Yes |
 
 ## 🔐 Security Best Practices
 

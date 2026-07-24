@@ -4,7 +4,7 @@
   <img width="1920" height="1080" alt="Evalu8 Screenshot" src="https://github.com/user-attachments/assets/bcabe849-9663-4f2a-a18c-9d8d77c90cee" />
 </p>
 
-AI-powered interview evaluation platform built with Next.js 15 and React 19.
+AI-powered interview evaluation platform built with Next.js 16 and React 19.
 
 ## Overview
 
@@ -13,6 +13,8 @@ The web application provides an intuitive interface for conducting AI-powered mo
 ## ✨ Features
 
 - 🎯 **AI-Powered Interviews** - Conduct mock interviews with intelligent evaluation
+- 🧠 **Smart Blueprints & Analysis** - Generate interview structure and extensive post-interview analysis using Google Gemini.
+- ☁️ **Cloud Resume Storage** - Upload resumes directly and securely to AWS S3.
 - 📊 **Analytics Dashboard** - Track performance metrics and insights
 - 🔐 **Authentication** - Secure NextAuth.js with Google & GitHub OAuth
 - 🎨 **Modern UI** - Beautiful components with shadcn/ui and Tailwind CSS
@@ -22,13 +24,15 @@ The web application provides an intuitive interface for conducting AI-powered mo
 
 ## 🛠️ Tech Stack
 
-- **Framework**: Next.js 15.4.2 (App Router)
+- **Framework**: Next.js 16.0.0 (App Router)
 - **UI Library**: React 19.1.0
 - **Language**: TypeScript 5.8.3
 - **Styling**: Tailwind CSS v4
 - **Components**: shadcn/ui (Radix UI)
 - **Authentication**: NextAuth.js v4.24.11
 - **Database**: Prisma ORM (via `@repo/db`)
+- **Cloud Storage**: AWS S3 SDK for client uploads
+- **AI Integration**: Google Generative AI SDK (with Key Rotation)
 - **Forms**: React Hook Form + Zod
 - **Icons**: Lucide React
 - **HTTP Client**: Axios
